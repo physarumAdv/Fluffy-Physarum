@@ -45,9 +45,33 @@ def get_distance(a, b):
     return np.sqrt(np.sum((a - b)**2))
 
 
+class TrailDot():
+    """
+    A smallest section of a trail
+    Attributes:
+        set_moment (int or float): The simulation iteration number,
+            when the trail dot was created. Note: it's either
+            integer, or `float('-inf')`
+    """
+    def __init__(self, set_moment):
+        self.set_moment = set_moment
+
+class MapDot():
+    """
+    A dot in a model map: how much food does
+    the dot contain, when the TrailDot was set
+    Attributes:
+        food (int): the number of food in this dot
+        trail (TrailDot): the trail dot in this point
+    """
+    def __init__(self, food=0):
+        self.food = food
+        self.trail = TrailDot(float('-inf'))
+
+
 class Particle():
     """
-    An object describing a part of a mold in the model
+    A part of a mold in the model
     Particle is also known as agent
     Attributes:
         SENSOR_ANGLE (int, degrees): the angle between the neighboring sensors
