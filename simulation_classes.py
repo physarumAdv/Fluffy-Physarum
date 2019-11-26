@@ -1,4 +1,4 @@
-import random, math
+import random
 
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
@@ -6,10 +6,26 @@ import matplotlib.pyplot as plt
 
 
 class Polyhedron():
+    """
+    A polyhedron for simulation
+    Attributes:
+        vertices (np.ndarray V by 3 of int): the polyhedron 
+            vertices' coordinates
+        edges (np.ndarray E by 2 of int): pairs of numbers
+            of vertices, connected by edges (0-indexing)
+        faces (two-dimentional np.ndarray of int): groups
+            of numbers of vertices, connected by one face
+            (0-indexing)
+    """
     def __init__(self, vertices, edges, faces):
+        """
+        Initializes a polyhedron
+        Parameters:
+            see the class attributes :)
+        """
         self.vertices = vertices
-        self.faces = faces
         self.edges = edges
+        self.faces = faces
 
 
 def transmission_matrix(face, polyhedron):
@@ -22,11 +38,11 @@ def transmission_matrix(face, polyhedron):
         np.ndarray 3 by 3 of float: transmission matrix
     """
     C = np.zeros((3, 3))
-    verA = np.array(polyhedron.vertices[face[0]])
-    verB = np.array(polyhedron.vertices[face[1]])
-    verC = np.array(polyhedron.vertices[face[2]])
-    C[:, 0] = verB - verA
-    C[:, 1] = verC - verA
+    verticeA = np.array(polyhedron.vertices[face[0]])
+    verticeB = np.array(polyhedron.vertices[face[1]])
+    verticeC = np.array(polyhedron.vertices[face[2]])
+    C[:, 0] = verticeB - verticeA
+    C[:, 1] = verticeC - verticeA
     C[0, 2] = C[1, 0]*C[2, 1] - C[2, 0]*C[1, 1]
     C[1, 2] = C[2, 0]*C[0, 1] - C[0, 0]*C[2, 1]
     C[2, 2] = C[0, 0]*C[1, 1] - C[1, 0]*C[0, 1]
@@ -85,25 +101,26 @@ class Particle():
         left_sensor (np.ndarray of three `int`s): the left sensor's coordinates
         central_sensor (np.ndarray of three `int`s): the central sensor's coordinates
         right_sensor (np.ndarray of three `int`s): the right sensor's coordinates
-        polyhedron (Polyhedron): the polyhedron we are running on
+        face (np.ndarray of 'int's): vertices defining current agent's face
     """
     SENSOR_ANGLE = 45
     ROTATION_ANGLE = 20
-    SENSOR_OFFSET = 0.001
-    STEP_SIZE = 0.001
+    SENSOR_OFFSET = 5
+    STEP_SIZE = 5
     TRAIL_DEPTH = 5
     def __init__(self, coords, central_sensor, face, polyhedron):
         """
         Initializing the particle(agent)
         Parameters:
             coords (np.ndarray of three `int`s): coordinates of agent
+            central_sensor (np.ndarray of three `int`s): central sensor's coordinates
             face (np.ndarray of 'int's): vertices defining current agent's face
-
+            polyhedron (Polyhedron): the polyhedron we are running on
         """
         self.food = 255
         self.coords = np.asarray(coords)
-        self.trail = np.zeros((self.TRAIL_DEPTH, 3))
         self.trans_matrix = np.array(transmission_matrix(face, polyhedron))
+        self.face = face
 
         self.left_sensor = np.zeros(3)
         self.central_sensor = np.asarray(central_sensor)
@@ -132,14 +149,14 @@ class Particle():
         C = np.linalg.inv(self.trans_matrix)
         return C @ point + self.coords
 
-    def eat(self, map_dot): # rewrite
+    def eat(self, map_dot):
         """
         Eat food on agent's coord
         Parameters:
             map_dot (MapDot): the dot on the map self is standing on
         """
-        if FoodMap[self.coords[0], self.coords[1], self.coords[2]] > 0:
-            FoodMap[self.coords[0], self.coords[1], self.coords[2]] -= 1
+        if map_dot.food > 0:
+            map_dot.food -= 1
             self.food += 1
 
     def _rotate_point_angle(self, normal, radius, angle):
@@ -158,13 +175,13 @@ class Particle():
 
     def init_sensors_from_center(self, polyhedron):
         """
-        Initializing lelf_sensor and right_sensor after full init using central_sensor
+        Initializing left_sensor and right_sensor after full init using central_sensor
         Parameters:
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         normal = np.cross(polyhedron.vertices[self.face[1]] - polyhedron.vertices[self.face[0]], \
                      polyhedron.vertices[self.face[2]] - polyhedron.vertices[self.face[0]])
-        normal = normal/get_distance(normal, np.zeros((1, 3)))
+        normal = normal / get_distance(normal, np.zeros((3)))
         radius = self.central_sensor - self.coords
         self.left_sensor = self._rotate_point_angle(normal, radius, self.SENSOR_ANGLE)
         self.right_sensor = self._rotate_point_angle(normal, radius, -self.SENSOR_ANGLE)
@@ -172,78 +189,58 @@ class Particle():
         if np.dot(normal, np.cross(self.right_sensor, self.left_sensor)) > 0:
             self.left_sensor, self.right_sensor = self.right_sensor, self.left_sensor
 
-    def get_sensors_values(self, sensors_map_dots): # rewrite
+    def get_sensors_values(self, sensors_map_dots, iteration):
         """
         Get food and trail sum on each sensor
         Parameters:
-            sensors_map_dots (np.ndarray of three MapDot): map dots of sensors
+            sensors_map_dots (tuple of three MapDot): map dots of sensors
+            iteration (int): current simulation iteration number
         Returns:
             np.ndarray of three `int`s: the answer
         """
-        trail_map_dim = TrailMap.shape[0]
-        ls = np.array([0, 0, 0])
-        cs = np.array([0, 0, 0])
-        rs = np.array([0, 0, 0])
-        for i in range(0, 3):
-            ls[i] = int((self.left_sensor[i] + 1)*(trail_map_dim-1) / 2)
-            cs[i] = int((self.central_sensor[i] + 1)*(trail_map_dim-1) / 2)
-            rs[i] = int((self.right_sensor[i] + 1)*(trail_map_dim-1) / 2)
-        return np.array([[TrailMap[ls[0], ls[1], ls[2]], \
-                          TrailMap[cs[0], cs[1], cs[2]], \
-                          TrailMap[rs[0], rs[1], rs[2]]],
-                         [FoodMap[ls[0], ls[1], ls[2]], \
-                          FoodMap[cs[0], cs[1], cs[2]], \
-                          FoodMap[rs[0], rs[1], rs[2]]]])
+        trail_under_sensor = np.zeros(3)
+        sensors_values = np.zeros(3)
+        for i in range(3):
+            if iteration - sensors_map_dots[i] <= self.TRAIL_DEPTH:
+                trail_under_sensor[i] = self.TRAIL_DEPTH + sensors_map_dots[i] - iteration
+            sensors_values[i] = sensors_map_dots[i].food + trail_under_sensor[i]
+        return sensors_values
 
-    def rotate(self, sensors_values): # rewrite
+    def rotate(self, sensors_values):
         """
         Rotates the particle and its sensors at the rotation angle
         Parameters:
             sensors_values (np.ndarray of three `int`s): food and trail sum of each sensors
         """
-        heading = 0
-        #turn according to food
-        if sense[1, 0] > 0 or sense[1, 2] > 0:
-            if sense[1, 0] > sense[1, 2]:
-                # turn left
-                heading += 5
-            else:
-                # turn right
-                heading -= 5
-
-        rand = random.randint(0, 15)
-        if rand == 1:
+        if random.randint(0, 10) == 0:
             # turn randomly
-            r = random.randint(0, 1)
-            if r == 0:
-                heading += self.RA
-            else:
-                heading -= self.RA
+            heading += random.randint(-1, 1) * self.ROTATION_ANGLE
         else:
-            if sense[0, 1] >= sense[0, 0] and sense[0, 1] >= sense[0, 2]:
-                pass
-            elif sense[0, 1] < sense[0, 0] and sense[0, 1] < sense[0, 2]:
+            if sensors_values[1] >= sensors_values[0] and sensors_values[1] >= sensors_values[2]:
+                heading = 0
+            elif sensors_values[1] < sensors_values[0] and sensors_values[1] < sensors_values[2] \
+                 and sensors_values[0] == sensors_values[2]:
                 # turn randomly
                 r = random.randint(0, 1)
                 if r == 0:
-                    heading += self.RA
+                    heading = -self.ROTATION_ANGLE
                 else:
-                    heading -= self.RA
-            elif sense[0, 0] >= sense[0, 1] and sense[0, 0] >= sense[0, 2]:
+                    heading = self.ROTATION_ANGLE
+            elif sensors_values[0] >= sensors_values[1] and sensors_values[0] >= sensors_values[2]:
                 # turn left
-                heading += self.RA
-            elif sense[0, 2] >= sense[0, 1] and sense[0, 2] >= sense[0, 0]:
+                heading = -self.ROTATION_ANGLE
+            elif sensors_values[2] >= sensors_values[1] and sensors_values[2] >= sensors_values[0]:
                 # turn right
-                heading -= self.RA
+                heading = self.ROTATION_ANGLE
 
-        n = np.cross(self.left_sensor - self.coord, self.right_sensor - self.coord)
-        n = n / get_distance(n, np.zeros((1, 3)))
-        p = self.left_sensor - self.coord
-        self.left_sensor = self.rotate_point_angle(n, p, heading)
-        p = self.central_sensor - self.coord
-        self.central_sensor = self.rotate_point_angle(n, p, heading)
-        p = self.right_sensor - self.coord
-        self.right_sensor = self.rotate_point_angle(n, p, heading)
+        normal = np.cross(self.left_sensor - self.coords, self.right_sensor - self.coords)
+        normal = normal / get_distance(normal, np.zeros((1, 3)))
+        radius = self.left_sensor - self.coords
+        self.left_sensor = self._rotate_point_angle(normal, radius, heading)
+        radius = self.central_sensor - self.coords
+        self.central_sensor = self._rotate_point_angle(normal, radius, heading)
+        radius = self.right_sensor - self.coords
+        self.right_sensor = self._rotate_point_angle(normal, radius, heading)
 
     def move(self):
         """
@@ -256,28 +253,31 @@ class Particle():
         self.right_sensor += vector_move
 
     def simple_visualizing(self, ax):
-        ax.scatter3D(xs=self.coords[0], ys=self.coords[1], zs=self.coords[2], color='black')
-        ax.scatter3D(xs=self.central_sensor[0], ys=self.central_sensor[1], zs=self.central_sensor[2], color='black')
-        ax.scatter3D(xs=self.left_sensor[0], ys=self.left_sensor[1], zs=self.left_sensor[2], color='red')
-        ax.scatter3D(xs=self.right_sensor[0], ys=self.right_sensor[1], zs=self.right_sensor[2], color='green')
-        ax.plot3D([self.coords[0], self.central_sensor[0]], [self.coords[1], self.central_sensor[1]], [self.coords[2], self.central_sensor[2]], color='black')
-        ax.plot3D([self.coords[0], self.left_sensor[0]], [self.coords[1], self.left_sensor[1]], [self.coords[2], self.left_sensor[2]], color='red')
-        ax.plot3D([self.coords[0], self.right_sensor[0]], [self.coords[1], self.right_sensor[1]], [self.coords[2], self.right_sensor[2]], color='green')
-        self.move_all_agent_coordinates()
+        left_sensor = self.left_sensor.astype(int)
+        central_sensor = self.central_sensor.astype(int)
+        right_sensor = self.right_sensor.astype(int)
+        coords = self.coords.astype(int)
+        
+        ax.scatter3D(xs=coords[0], ys=coords[1], zs=coords[2], color='black')
+        ax.scatter3D(xs=central_sensor[0], ys=central_sensor[1], zs=central_sensor[2], color='black')
+        ax.scatter3D(xs=left_sensor[0], ys=left_sensor[1], zs=left_sensor[2], color='red')
+        ax.scatter3D(xs=right_sensor[0], ys=right_sensor[1], zs=right_sensor[2], color='green')
+        ax.plot3D([coords[0], central_sensor[0]], [coords[1], central_sensor[1]], [coords[2], central_sensor[2]], color='black')
+        ax.plot3D([coords[0], left_sensor[0]], [coords[1], left_sensor[1]], [coords[2], left_sensor[2]], color='red')
+        ax.plot3D([coords[0], right_sensor[0]], [coords[1], right_sensor[1]], [coords[2], right_sensor[2]], color='green')
+        self.move()
         #sleep(0.1)
 
 
 if __name__ == "__main__":
-    TrailMap = np.zeros((100, 100, 100))
-    FoodMap = np.zeros((100, 100, 100))
-    triangle = Polyhedron(vertices=np.array([[0, 0, 0], [0, 2., 0], [2., 0, 0]]), edges=[], faces=[0, 1, 2])
+    triangle = Polyhedron(vertices=np.array([[0., 0, 0], [0., 10, 0], [10., 0, 0]]), edges=[], faces=[0, 1, 2])
     surface = [0, 1, 2]
-    part = Particle(0., 0., 0., surface, triangle.vertices, triangle.edges, triangle.faces)
-    part.init_sensors_from_center()
+    part = Particle([0., 0, 0], [5., 0, 0], surface, triangle)
+    part.init_sensors_from_center(triangle)
     fig = plt.figure()
     ax = plt.axes(projection='3d')
 
     for i in range(0, 5):
         part.simple_visualizing(ax)
-        part.rotate_all_sensors(part.sense_trail(TrailMap, FoodMap))
+        part.rotate(np.array([10., 0, 0]))
     plt.show()
