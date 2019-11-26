@@ -1,4 +1,4 @@
-# Physarum Renaissance
+# Fluffy Physarum
 After a short break we decided to resume the thread, and write *a fully new code on python*.
 * Inspired by this [awesome work](https://www.sagejenson.com/physarum) 
 * Consider reading [full version](http://eprints.uwe.ac.uk/15260/1/artl.2010.16.2.pdf) 
