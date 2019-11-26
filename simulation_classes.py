@@ -16,7 +16,7 @@ def transmission_matrix(face, polyhedron):
     """
     Calculation of transmission matrix for particle
     Parameters:
-        surface (one-dimentional np.ndarray): vertices defining a face
+        face (one-dimentional np.ndarray): vertices defining a face
         polyhedron (Polyhedron): polyhedron we are running on
     Returns:
         np.ndarray 3 by 3 of float: transmission matrix
@@ -102,12 +102,12 @@ class Particle():
         """
         self.food = 255
         self.coords = np.asarray(coords)
-        self.trail = np.zeros((self.depT, 3))
+        self.trail = np.zeros((self.TRAIL_DEPTH, 3))
         self.trans_matrix = np.array(transmission_matrix(face, polyhedron))
 
-        self.left_sensor = 0
-        self.central_sensor = central_sensor
-        self.right_sensor = 0
+        self.left_sensor = np.zeros(3)
+        self.central_sensor = np.asarray(central_sensor)
+        self.right_sensor = np.zeros(3)
 
 
     def space_to_face(self, point):
