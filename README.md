@@ -18,16 +18,7 @@ Green spots - food.
 ---
 
 
-### Instalation
-Setup VisPy OpenGL library:
+## Requirements
 ```
-  pip install vispy
-```
-and one more visualising library:
-```
-  pip install pyqt5
-```
-plus, if you don't have numpy library, please install
-```
-  pip install numpy
+  pip install vispy pyqt5 numpy
 ```
