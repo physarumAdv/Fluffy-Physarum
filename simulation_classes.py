@@ -17,15 +17,20 @@ class Polyhedron():
             of numbers of vertices, connected by one face
             (0-indexing)
     """
-    def __init__(self, vertices, edges, faces):
+    def __init__(self, vertices, faces):
         """
         Initializes a polyhedron
         Parameters:
             see the class attributes :)
         """
         self.vertices = vertices
-        self.edges = edges
         self.faces = faces
+        self.edges = set()
+        for face in self.faces:
+            for i in range(len(face) - 1):
+                vertices = sorted(face[i:i+2].tolist())
+                self.edges.add(tuple(vertices))
+        self.edges = np.asarray(list(self.edges))
 
 
 def transmission_matrix(face, polyhedron):
