@@ -251,22 +251,51 @@ class Particle():
         self.central_sensor = self._rotate_point_angle(normal, radius, heading)
         radius = self.right_sensor - self.coords
         self.right_sensor = self._rotate_point_angle(normal, radius, heading)
-
-    def move(self, map_dot, iteration):
+	
+	def _move_step_size(self):
+		"""
+        Moves the particle forward on step size
+        """
+        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+        self.coords += vector_move
+        self.central_sensor += vector_move
+        self.left_sensor += vector_move
+        self.right_sensor += vector_move
+		
+	def _move_through_edge(self, face, polyhedron):
+		normal_start = np.cross(self.left_sensor - self.coords, \
+							    self.right_sensor - self.coords)
+        normal_start = normal_start / get_distance(normal, np.zeros(3))
+		normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
+								 polyhedron.vertices[self.face[0]], \
+								 polyhedron.vertices[self.face[2]] - \
+								 polyhedron.vertices[self.face[0]])
+        normal_finish = normal_finish / get_distance(normal, np.zeros(3))
+        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+		vector_move = vector_move / get_distance(vector_move, np.zeros(3))
+		
+		# counting angle between faces
+		phi = np.arccos(np.dot(normal_start, normal_finish) / \
+					get_distance(normal_start, np.zeros(3)) / \
+					get_distance(normal_finish, np.zeros(3)))
+		# counting moving vector angle
+		alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
+		faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
+					    np.sin(alpha)/np.sin(phi) + \
+					   (np.cross(normal_start, normal_finish)) * \
+						np.cos(alpha)/np.sin(phi)
+		return faced_vector
+	
+    def move(self, map_dot, iteration, face, polyhedron):
         """
         Moves the particle forward on step size
         Parameters:
             map_dot (MapDot): the map dot I am moving FROM (!!!)
             iteration (int): current simulation iteration number
         """
-        self.food -= 1 # Loose my energy when moving
+        self.food -= 1 # Lose my energy when moving
         map_dot.trail.set_moment = iteration
-
-        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
-        self.coords += vector_move
-        self.central_sensor += vector_move
-        self.left_sensor += vector_move
-        self.right_sensor += vector_move
+		self._move_step_size()
 
     def simple_visualizing(self, ax):
         left_sensor = self.left_sensor.astype(int)
@@ -281,8 +310,6 @@ class Particle():
         ax.plot3D([coords[0], central_sensor[0]], [coords[1], central_sensor[1]], [coords[2], central_sensor[2]], color='black')
         ax.plot3D([coords[0], left_sensor[0]], [coords[1], left_sensor[1]], [coords[2], left_sensor[2]], color='red')
         ax.plot3D([coords[0], right_sensor[0]], [coords[1], right_sensor[1]], [coords[2], right_sensor[2]], color='green')
-        self.move()
-        #sleep(0.1)
 
 
 if __name__ == "__main__":
