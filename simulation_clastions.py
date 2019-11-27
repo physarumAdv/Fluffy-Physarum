@@ -252,10 +252,16 @@ class Particle():
         radius = self.right_sensor - self.coords
         self.right_sensor = self._rotate_point_angle(normal, radius, heading)
 
-    def move(self):
+    def move(self, map_dot, iteration):
         """
         Moves the particle forward on step size
+        Parameters:
+            map_dot (MapDot): the map dot I am moving FROM (!!!)
+            iteration (int): current simulation iteration number
         """
+        self.food -= 1 # Loose my energy when moving
+        map_dot.trail.set_moment = iteration
+
         vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
         self.coords += vector_move
         self.central_sensor += vector_move
