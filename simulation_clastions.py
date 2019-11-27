@@ -195,14 +195,14 @@ class Particle():
         Parameters:
             polyhedron (Polyhedron): the polyhedron we are running on
         """
-        normal = np.cross(polyhedron.vertices[self.face[1]] - polyhedron.vertices[self.face[0]], \
-                     polyhedron.vertices[self.face[2]] - polyhedron.vertices[self.face[0]])
+        normal = np.cross(polyhedron.vertices[self.face[2]] - polyhedron.vertices[self.face[0]], \
+                    polyhedron.vertices[self.face[1]] - polyhedron.vertices[self.face[0]])
         normal = normal / get_distance(normal, np.zeros((3)))
         radius = self.central_sensor - self.coords
         self.left_sensor = self._rotate_point_angle(normal, radius, self.SENSOR_ANGLE)
         self.right_sensor = self._rotate_point_angle(normal, radius, -self.SENSOR_ANGLE)
 
-        if np.dot(normal, np.cross(self.right_sensor, self.left_sensor)) > 0:
+        if np.dot(normal, np.cross(self.right_sensor - self.coords, self.left_sensor - self.coords)) < 0:
             self.left_sensor, self.right_sensor = self.right_sensor, self.left_sensor
 
     def get_sensors_values(self, sensors_map_dots, iteration):
@@ -290,8 +290,6 @@ class Particle():
         ax.plot3D([coords[0], central_sensor[0]], [coords[1], central_sensor[1]], [coords[2], central_sensor[2]], color='black')
         ax.plot3D([coords[0], left_sensor[0]], [coords[1], left_sensor[1]], [coords[2], left_sensor[2]], color='red')
         ax.plot3D([coords[0], right_sensor[0]], [coords[1], right_sensor[1]], [coords[2], right_sensor[2]], color='green')
-        self.move()
-        #sleep(0.1)
 
 
 if __name__ == "__main__":

@@ -12,9 +12,9 @@ polyhedron = Polyhedron(
     vertices=np.asarray([(0, 0, 0), (0, 0, cel), \
         (cel, 0, cel), (cel, 0, 0), (cel, cel, 0), \
         (0, cel, 0), (0, cel, cel), (cel, cel, cel)]),
-    faces=np.asarray([(0, 1, 2, 3), (0, 1, 6, 5), \
-        (0, 3, 4, 5), (2, 3, 4, 7), (1, 2, 7, 6), \
-        (4, 5, 6, 7)])
+    faces=np.asarray([(0, 1, 2, 3), (0, 5, 6, 1), \
+        (0, 3, 4, 5), (2, 7, 4, 3), (1, 6, 7, 2), \
+        (4, 7, 6, 5)])
     )
 initializing_face = (0, 3, 4, 5)
 
