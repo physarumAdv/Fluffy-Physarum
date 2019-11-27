@@ -54,6 +54,31 @@ def transmission_matrix(face, polyhedron):
     return C
 
 
+def space_to_face(point, origin, trans_matrix):
+    """
+    Returns coordinates of the point, relative to origin in its surface
+    Parameters:
+        point (np.ndarray of three `int`s): the point's coordinates
+        origin (np.ndarray of three `int`s): the origin's coordinates
+        trans_matrix (np.ndarray 3 by 3 of float): transmission matrix
+    Returns:
+        np.ndarray of three `int`s: the answer
+    """
+    delta_p = point - origin
+    return trans_matrix @ delta_p
+
+def face_to_space(point, origin, trans_matrix):
+    """
+    Returns coordinates of P relative to base space
+    Parameters:
+        point (np.ndarray of three `int`s): the point's coordinates
+        origin (np.ndarray of three `int`s): the origin's coordinates
+        trans_matrix (np.ndarray 3 by 3 of float): transmission matrix
+    Returns:
+        np.ndarray of three `int`s: the answer
+    """
+    C = np.linalg.inv(trans_matrix)
+    return C @ point + origin
 
 def get_distance(a, b):
     """
@@ -124,35 +149,14 @@ class Particle():
         """
         self.food = 255
         self.coords = np.asarray(coords)
-        self.trans_matrix = np.array(transmission_matrix(face, polyhedron))
-        self.face = face
+        self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
+        self.face = np.asarray(face)
 
         self.left_sensor = np.zeros(3)
         self.central_sensor = np.asarray(central_sensor)
         self.right_sensor = np.zeros(3)
 
 
-    def space_to_face(self, point):
-        """
-        Returns coordinates of the point, relative to self.coord in self.surface
-        Parameters:
-            point (np.ndarray of three `int`s): the point's coordinates
-        Returns:
-            np.ndarray of three `int`s: the answer
-        """
-        delta_p = point - self.coords
-        return self.trans_matrix @ delta_p
-
-    def face_to_space(self, point):
-        """
-        Returns coordinates of P relative to base space
-        Parameters:
-            point (np.ndarray of three `int`s): the point's coordinates
-        Returns:
-            np.ndarray of three `int`s: the answer
-        """
-        C = np.linalg.inv(self.trans_matrix)
-        return C @ point + self.coords
 
     def eat(self, map_dot):
         """
@@ -217,6 +221,7 @@ class Particle():
         Parameters:
             sensors_values (np.ndarray of three `int`s): food and trail sum of each sensors
         """
+        sensors_values = np.asarray(sensors_values)
         if random.randint(0, 10) == 0:
             # turn randomly
             heading += random.randint(-1, 1) * self.ROTATION_ANGLE
