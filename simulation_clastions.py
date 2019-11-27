@@ -69,7 +69,7 @@ def space_to_face(point, origin, trans_matrix):
 
 def face_to_space(point, origin, trans_matrix):
     """
-    Returns coordinates of P relative to base space
+    Returns a vector of P relative to origin in base space
     Parameters:
         point (np.ndarray of three `int`s): the point's coordinates
         origin (np.ndarray of three `int`s): the origin's coordinates
@@ -78,7 +78,7 @@ def face_to_space(point, origin, trans_matrix):
         np.ndarray of three `int`s: the answer
     """
     C = np.linalg.inv(trans_matrix)
-    return C @ point + origin
+    return C @ point
 
 def get_distance(a, b):
     """
@@ -114,6 +114,10 @@ class MapDot():
         self.food = food
         self.trail = TrailDot(float('-inf'))
 
+    def __repr__(self):
+        return f'<MapDot with food={self.food} and trail, ' \
+            f'set at {self.trail.set_moment}>'
+
 
 class Particle():
     """
@@ -148,7 +152,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         self.food = 255
-        self.coords = np.asarray(coords)
+        self.coords = np.asarray(coords).astype(float)
         self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
         self.face = np.asarray(face)
 
@@ -156,6 +160,9 @@ class Particle():
         self.central_sensor = np.asarray(central_sensor)
         self.right_sensor = np.zeros(3)
 
+    def __repr__(self):
+        return f'<Particle with coords={tuple(self.coords.tolist())} ' \
+            f'and food={self.food}>'
 
 
     def eat(self, map_dot):
@@ -210,8 +217,9 @@ class Particle():
         trail_under_sensor = np.zeros(3)
         sensors_values = np.zeros(3)
         for i in range(3):
-            if iteration - sensors_map_dots[i] <= self.TRAIL_DEPTH:
-                trail_under_sensor[i] = self.TRAIL_DEPTH + sensors_map_dots[i] - iteration
+            if iteration - sensors_map_dots[i].trail.set_moment <= self.TRAIL_DEPTH:
+                trail_under_sensor[i] = self.TRAIL_DEPTH + \
+                    sensors_map_dots[i].trail.set_moment - iteration
             sensors_values[i] = sensors_map_dots[i].food + trail_under_sensor[i]
         return sensors_values
 
@@ -222,9 +230,10 @@ class Particle():
             sensors_values (np.ndarray of three `int`s): food and trail sum of each sensors
         """
         sensors_values = np.asarray(sensors_values)
+        heading = None
         if random.randint(0, 10) == 0:
             # turn randomly
-            heading += random.randint(-1, 1) * self.ROTATION_ANGLE
+            heading = random.randint(-1, 1) * self.ROTATION_ANGLE
         else:
             if sensors_values[1] >= sensors_values[0] and sensors_values[1] >= sensors_values[2]:
                 heading = 0
@@ -269,10 +278,10 @@ class Particle():
         self.right_sensor += vector_move
 
     def simple_visualizing(self, ax):
-        left_sensor = self.left_sensor.astype(int)
-        central_sensor = self.central_sensor.astype(int)
-        right_sensor = self.right_sensor.astype(int)
-        coords = self.coords.astype(int)
+        left_sensor = np.round(self.left_sensor)
+        central_sensor = np.round(self.central_sensor)
+        right_sensor = np.round(self.right_sensor)
+        coords = np.round(self.coords)
         
         ax.scatter3D(xs=coords[0], ys=coords[1], zs=coords[2], color='black')
         ax.scatter3D(xs=central_sensor[0], ys=central_sensor[1], zs=central_sensor[2], color='black')
