@@ -89,6 +89,25 @@ def get_distance(a, b):
         float: the answer 
     """
     return np.sqrt(np.sum((a - b)**2))
+    
+def line_intersection(line1, line2):
+    """
+    Returns the point of two lines intersection, if they are parallel 
+    returns None
+    Parameters:
+        line1, line2 (np.ndarray 2 by 3 of int): two point on line_intersection
+    Return:
+        np.ndarray of three `int`s: if they intersect
+        NoneType: if they are parallel
+    """ 
+    s = np.vstack([line1, line2])       # s for stacked
+    h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
+    l1 = np.cross(h[0], h[1])           # get first line
+    l2 = np.cross(h[2], h[3])           # get second line
+    x, y, z = np.cross(l1, l2)          # point of intersection
+    if z == 0:                          # lines are parallel
+        return None
+    return (x/z, y/z)
 
 
 class TrailDot():
@@ -155,7 +174,6 @@ class Particle():
         self.left_sensor = np.zeros(3)
         self.central_sensor = np.asarray(central_sensor)
         self.right_sensor = np.zeros(3)
-
 
 
     def eat(self, map_dot):
@@ -251,41 +269,49 @@ class Particle():
         self.central_sensor = self._rotate_point_angle(normal, radius, heading)
         radius = self.right_sensor - self.coords
         self.right_sensor = self._rotate_point_angle(normal, radius, heading)
-	
-	def _move_step_size(self):
+    
+	def _get_vector_move(self):
 		"""
-        Moves the particle forward on step size
+        Get the vector to which the agent moves
+		Return:
+			np.ndarray of three `int`s: the answer
         """
-        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+        return self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+	
+    def _move_step_size(self, vector_move):
+        """
+        Moves the particle forward on step size
+		Parameters:
+			vector_move (np.ndarray of three `int`s): vector the agent moves
+        """
         self.coords += vector_move
         self.central_sensor += vector_move
         self.left_sensor += vector_move
         self.right_sensor += vector_move
-		
-	def _move_through_edge(self, face, polyhedron):
-		normal_start = np.cross(self.left_sensor - self.coords, \
-							    self.right_sensor - self.coords)
+        
+    def _move_through_edge(self, face, polyhedron, vector_move):
+        normal_start = np.cross(self.left_sensor - self.coords, \
+                                self.right_sensor - self.coords)
         normal_start = normal_start / get_distance(normal, np.zeros(3))
-		normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
-								 polyhedron.vertices[self.face[0]], \
-								 polyhedron.vertices[self.face[2]] - \
-								 polyhedron.vertices[self.face[0]])
+        normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
+                                 polyhedron.vertices[self.face[0]], \
+                                 polyhedron.vertices[self.face[2]] - \
+                                 polyhedron.vertices[self.face[0]])
         normal_finish = normal_finish / get_distance(normal, np.zeros(3))
-        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
-		vector_move = vector_move / get_distance(vector_move, np.zeros(3))
-		
-		# counting angle between faces
-		phi = np.arccos(np.dot(normal_start, normal_finish) / \
-					get_distance(normal_start, np.zeros(3)) / \
-					get_distance(normal_finish, np.zeros(3)))
-		# counting moving vector angle
-		alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
-		faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
-					    np.sin(alpha)/np.sin(phi) + \
-					   (np.cross(normal_start, normal_finish)) * \
-						np.cos(alpha)/np.sin(phi)
-		return faced_vector
-	
+        vector_move = vector_move / get_distance(vector_move, np.zeros(3))
+        
+        # counting angle between faces
+        phi = np.arccos(np.dot(normal_start, normal_finish) / \
+                    get_distance(normal_start, np.zeros(3)) / \
+                    get_distance(normal_finish, np.zeros(3)))
+        # counting moving vector angle
+        alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
+        faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
+                        np.sin(alpha)/np.sin(phi) + \
+                       (np.cross(normal_start, normal_finish)) * \
+                        np.cos(alpha)/np.sin(phi)
+        return faced_vector
+    
     def move(self, map_dot, iteration, face, polyhedron):
         """
         Moves the particle forward on step size
@@ -295,7 +321,14 @@ class Particle():
         """
         self.food -= 1 # Lose my energy when moving
         map_dot.trail.set_moment = iteration
-		self._move_step_size()
+		vector_move = self._get_vector_move()
+        
+		for edge in edges:
+			line1 = np.asarray([[polyhedron.vertices[edge[0]], polyhedron.vertices[edge[1]]], \
+								[polyhedron.vertices[edge[0]], polyhedron.vertices[edge[1]]]])
+			line2 = np.asarray([[self.coords
+        
+        self._move_step_size()
 
     def simple_visualizing(self, ax):
         left_sensor = self.left_sensor.astype(int)
