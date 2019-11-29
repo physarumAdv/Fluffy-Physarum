@@ -22,7 +22,7 @@ class Visualizer():
         self.size = size
         vx, vy, vz = np.rot90(polyhedron.vertices)[::-1]
         i, j, k = [], [], []
-        
+
         for face in polyhedron.faces:
             for a in range(1, len(face) - 1):
                 i.append(face[0])
@@ -56,7 +56,7 @@ class Visualizer():
                 z=frame.z,
                 mode='markers',
                 marker=dict(size=self.size, color='yellow'))]
-    
+
     def redraw(self):
         fig = go.Figure(data=self.create(0),
             layout=go.Layout(
@@ -70,27 +70,3 @@ class Visualizer():
                             args=[None])])]),
                 frames=[go.Frame(data=self.create(i)) for i in range(len(self.frames))])
         fig.show()
-        
-
-#--------------#
-if __name__ == '__main__':
-    from simulation_clastions import Particle, Polyhedron
-
-    polyhedron = Polyhedron(
-        vertices=np.asarray([[0, 0, 0], [1, 0, 2], [2, 1, 0], [0, 2, 1]]),
-        faces=np.asarray([[0, 1, 2], [2, 1, 3], [3, 1, 0], [0, 2, 3]]))
-    
-    visualizer = Visualizer(polyhedron)  # init
-    p1 = Particle(np.asarray([1, 1, 1]), [], [], polyhedron)
-    p2 = Particle(np.asarray([2, 2, 2]), [], [], polyhedron)
-    p3 = Particle(np.asarray([0, 2, 2]), [], [], polyhedron)
-    visualizer.add_frame([p1], {})  # add one frame
-    visualizer.add_frame([p1, p2], {})
-    visualizer.add_frame([p1, p2, p3], {})
-    
-    '''
-    for i in range(10):  # random test
-        visualiser.add_frame(np.random.rand(5, 3))  # add one frame
-    '''
-        
-    visualizer.redraw()  # open window
