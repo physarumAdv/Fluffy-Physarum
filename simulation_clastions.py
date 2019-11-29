@@ -153,7 +153,7 @@ class Particle():
         """
         self.food = 255
         self.coords = np.asarray(coords).astype(float)
-        self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
+        #self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
         self.face = np.asarray(face)
 
         self.left_sensor = np.zeros(3)
