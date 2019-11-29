@@ -8,14 +8,17 @@ import matplotlib.pyplot as plt
 class Polyhedron():
     """
     A polyhedron for simulation
+    Note: the polyhedron must be convex
     Attributes:
-        vertices (np.ndarray V by 3): the polyhedron 
+        vertices (np.ndarray V by 3): the polyhedron
             vertices' coordinates
         edges (np.ndarray E by 2 of int): pairs of numbers
             of vertices, connected by edges (0-indexing)
-        faces (two-dimentional np.ndarray of int): groups
-            of numbers of vertices, connected by one face
-            (0-indexing)
+        faces (two-dimentional np.ndarray of int): the array
+            of faces, where each face is given as an array of
+            numbers of vertices on the face (vertices are 0-indexed).
+            Note: list the vertices clockwise watching
+                outside the polyhedron for each face
     """
     def __init__(self, vertices, faces):
         """
@@ -67,12 +70,11 @@ def space_to_face(point, origin, trans_matrix):
     delta_p = point - origin
     return trans_matrix @ delta_p
 
-def face_to_space(point, origin, trans_matrix):
+def face_to_space(point, trans_matrix):
     """
     Returns a vector of P relative to origin in base space
     Parameters:
         point (np.ndarray of three `float`s): the point's coordinates
-        origin (np.ndarray of three `float`s): the origin's coordinates
         trans_matrix (np.ndarray 3 by 3 of float): transmission matrix
     Returns:
         np.ndarray of three `float`s: the answer
@@ -86,9 +88,48 @@ def get_distance(a, b):
     Parameters:
         a, b (np.ndarray of three `float`s): two point's coordinates
     Returns:
-        float: the answer 
+        float: the answer
     """
     return np.sqrt(np.sum((a - b)**2))
+
+def line_intersection(line1, line2):
+    """
+    Returns the point of two lines intersection, if they are parallel
+    returns None
+    Parameters:
+        line1, line2 (np.ndarray 2 by 3 of int): two points on line
+    Returns:
+        np.ndarray of three `int`s: if they intersect
+        NoneType: if they are parallel
+    """
+    s = np.vstack([line1[:, :2], line2[:, :2]])       # s for stacked
+    h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
+    l1 = np.cross(h[0], h[1])           # get first line
+    l2 = np.cross(h[2], h[3])           # get second line
+    x, y, z = np.cross(l1, l2)          # point of intersection
+    if z == 0:                          # lines are parallel
+        return None
+    return np.array([x/z, y/z, 0])
+
+def is_in_segment(point, segment):
+    """
+    Checks if the point is in segment
+    Parameters:
+        point (np.ndarray of three `int`s): the point to check
+        segment (np.ndarray 2 by 3 of int): two points defining a segment
+    Returns:
+        True if point belongs to segment
+        False if point does not belong to segment
+    """
+    if (point[0] >= min(segment[0, 0], segment[1, 0]) and \
+        point[0] <= max(segment[0, 0], segment[1, 0])) and \
+       (point[1] >= min(segment[0, 1], segment[1, 1]) and \
+        point[1] <= max(segment[0, 1], segment[1, 1])) and \
+       (point[2] >= min(segment[0, 2], segment[1, 2]) and \
+        point[2] <= max(segment[0, 2], segment[1, 2])):
+        return True
+    else:
+        return False
 
 
 class TrailDot():
@@ -163,7 +204,6 @@ class Particle():
     def __repr__(self):
         return f'<Particle with coords={tuple(self.coords.tolist())} ' \
             f'and food={self.food}>'
-
 
     def eat(self, map_dot):
         """
@@ -261,28 +301,130 @@ class Particle():
         radius = self.right_sensor - self.coords
         self.right_sensor = self._rotate_point_angle(normal, radius, heading)
 
-    def move(self, map_dot, iteration):
+    def _get_vector_move(self):
+        """
+        Get the vector to which the agent moves
+        Returns:
+            np.ndarray of three `int`s: the answer
+        """
+        return self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+
+    def _change_face(self, edge, polyhedron):
+        """
+        Returns another face that edge's vertices belong to
+        Parameters:
+            edge (np.ndarray of two `int`s): pairs of numbers
+                of vertices, connected by edges (0-indexing)
+            polyhedron (Polyhedron): the polyhedron we are running on
+        """
+        for face in polyhedron.faces:
+            if (face != self.face).any() and len(np.argwhere(face==edge[0])) > 0 \
+                                 and len(np.argwhere(face==edge[1])) > 0:
+                self.face = face
+                break
+        self.trans_matrix = transmission_matrix(self.face, polyhedron)
+
+    def _count_moving_vector_through_edge(self, vector_move, polyhedron):
+        """
+        Count moving vector's direction relative to face after crossing the edge
+                                                    (it's self.face after changing)
+        Parameters:
+            vector_move (np.ndarray of three `int`s): vector the agent moves
+            polyhedron (Polyhedron): the polyhedron we are running on
+        Returns:
+            np.ndarray of three `int`s: the answer
+        """
+        normal_start = np.cross(self.left_sensor - self.coords, \
+                                self.right_sensor - self.coords)
+        normal_start = normal_start / get_distance(normal_start, np.zeros(3))
+        normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
+                                 polyhedron.vertices[self.face[0]], \
+                                 polyhedron.vertices[self.face[2]] - \
+                                 polyhedron.vertices[self.face[0]])
+        normal_finish = normal_finish / get_distance(normal_finish, np.zeros(3))
+        vector_move = vector_move / get_distance(vector_move, np.zeros(3))
+
+        # counting angle between faces
+        phi = np.arccos(np.dot(normal_start, normal_finish) / \
+                    get_distance(normal_start, np.zeros(3)) / \
+                    get_distance(normal_finish, np.zeros(3)))
+        # counting moving vector angle
+        alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
+        faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
+                        np.sin(alpha)/np.sin(phi) + \
+                       (np.cross(normal_start, normal_finish)) * \
+                        np.cos(alpha)/np.sin(phi)
+        return faced_vector
+
+    def _move_throught_edge(self, vector_move, edge, intersect, polyhedron):
+        """
+        Change agent's coordinates to another face
+        Parameters:
+            vector_move (np.ndarray of three `int`s): vector the agent moves
+            edge (np.ndarray of two `int`s):
+            intersect (np.ndarray of three `int`s):
+            polyhedron (Polyhedron): the polyhedron we are running on
+        """
+        self._change_face(edge, polyhedron)
+        # self.face and self.trans_matrix changed
+        faced_vector = self._count_moving_vector_through_edge(vector_move, polyhedron)
+        faced_vector = faced_vector * \
+                      (self.STEP_SIZE - get_distance(intersect, np.zeros(3))) / \
+                       get_distance(faced_vector, np.zeros(3))
+        self.coords = self.coords + intersect + faced_vector
+        self.central_sensor = self.coords + faced_vector * self.SENSOR_OFFSET / \
+                                        get_distance(faced_vector, np.zeros(3))
+        self.init_sensors_from_center(polyhedron)
+
+    def _move_step_size(self, vector_move):
+        """
+        Moves the particle forward on step size
+        Parameters:
+            vector_move (np.ndarray of three `int`s): vector the agent moves
+        """
+        self.coords += vector_move
+        self.central_sensor += vector_move
+        self.left_sensor += vector_move
+        self.right_sensor += vector_move
+
+    def move(self, map_dot, iteration, polyhedron):
         """
         Moves the particle forward on step size
         Parameters:
             map_dot (MapDot): the map dot I am moving FROM (!!!)
             iteration (int): current simulation iteration number
+            polyhedron (Polyhedron): the polyhedron we are running on
         """
-        self.food -= 1 # Loose my energy when moving
+        self.food -= 1 # Lose my energy when moving
         map_dot.trail.set_moment = iteration
+        vector_move = self._get_vector_move()
 
-        vector_move = self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
-        self.coords += vector_move
-        self.central_sensor += vector_move
-        self.left_sensor += vector_move
-        self.right_sensor += vector_move
+        for edge in polyhedron.edges:
+            # check whether agent will cross the edge or not
+            line1 = np.asarray([space_to_face(polyhedron.vertices[edge[0]], \
+                                    self.coords, self.trans_matrix), \
+                                space_to_face(polyhedron.vertices[edge[1]], \
+                                    self.coords, self.trans_matrix)])
+            line2 = np.asarray([space_to_face(self.coords, \
+                                    self.coords, self.trans_matrix), \
+                                space_to_face(self.coords + vector_move, \
+                                    self.coords, self.trans_matrix)])
+            intersect = line_intersection(line1, line2)
+            if intersect is not None:
+                if is_in_segment(intersect, line1) and \
+                        is_in_segment(intersect, line2):
+                    intersect = face_to_space(intersect, self.trans_matrix)
+                    self._move_throught_edge(vector_move, edge, intersect, polyhedron)
+                    return
+
+        self._move_step_size(vector_move)
 
     def simple_visualizing(self, ax):
         left_sensor = np.round(self.left_sensor)
         central_sensor = np.round(self.central_sensor)
         right_sensor = np.round(self.right_sensor)
         coords = np.round(self.coords)
-        
+
         ax.scatter3D(xs=coords[0], ys=coords[1], zs=coords[2], color='black')
         ax.scatter3D(xs=central_sensor[0], ys=central_sensor[1], zs=central_sensor[2], color='black')
         ax.scatter3D(xs=left_sensor[0], ys=left_sensor[1], zs=left_sensor[2], color='red')

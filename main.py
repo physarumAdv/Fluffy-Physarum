@@ -4,6 +4,7 @@ import numpy as np
 
 from simulation_clastions import Polyhedron, TrailDot, MapDot, \
     Particle, transmission_matrix, face_to_space, get_distance
+from visualizer import Visualizer
 
 
 cel = 1000 # cube_edge_length
@@ -55,7 +56,7 @@ def add_particle(particles, coordinates, face, polyhedron):
         0
         ])
     move_vector = face_to_space(central_sensor, \
-        coordinates, transmission_matrix(face, polyhedron))
+        transmission_matrix(face, polyhedron))
     move_vector /= get_distance(np.asarray([0, 0, 0]), move_vector)
     move_vector *= Particle.SENSOR_OFFSET
 
@@ -101,7 +102,7 @@ def simulate(start_point_coordinates, initializing_face, \
                 )
             particle.rotate(smelled)
             particle.move(get_map_dot(particle.coords, \
-                simulation_map), iteration_number)
+                simulation_map), iteration_number, polyhedron)
 
         yield particles, simulation_map
 
@@ -110,4 +111,12 @@ def simulate(start_point_coordinates, initializing_face, \
 if __name__ == "__main__":
     simulation = simulate(start_point_coordinates,
         initializing_face, polyhedron)
-    list(simulation) # Run
+    visualizer = Visualizer(polyhedron)
+
+    i = 0
+    while True:
+        particles, simulation_map = next(simulation)
+        visualizer.add_frame(particles, simulation_map)
+        i += 1
+        if i % 100 == 0:
+            visualizer.redraw()
