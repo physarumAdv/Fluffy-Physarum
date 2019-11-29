@@ -102,7 +102,7 @@ def line_intersection(line1, line2):
         np.ndarray of three `int`s: if they intersect
         NoneType: if they are parallel
     """
-    s = np.vstack([line1, line2])       # s for stacked
+    s = np.vstack([line1[:, :2], line2[:, :2]])       # s for stacked
     h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
     l1 = np.cross(h[0], h[1])           # get first line
     l2 = np.cross(h[2], h[3])           # get second line
@@ -318,7 +318,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         for face in polyhedron.faces:
-            if face != self.face and len(np.argwhere(face==edge[0])) > 0 \
+            if (face != self.face).any() and len(np.argwhere(face==edge[0])) > 0 \
                                  and len(np.argwhere(face==edge[1])) > 0:
                 self.face = face
                 break
@@ -336,12 +336,12 @@ class Particle():
         """
         normal_start = np.cross(self.left_sensor - self.coords, \
                                 self.right_sensor - self.coords)
-        normal_start = normal_start / get_distance(normal, np.zeros(3))
+        normal_start = normal_start / get_distance(normal_start, np.zeros(3))
         normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
                                  polyhedron.vertices[self.face[0]], \
                                  polyhedron.vertices[self.face[2]] - \
                                  polyhedron.vertices[self.face[0]])
-        normal_finish = normal_finish / get_distance(normal, np.zeros(3))
+        normal_finish = normal_finish / get_distance(normal_finish, np.zeros(3))
         vector_move = vector_move / get_distance(vector_move, np.zeros(3))
 
         # counting angle between faces
@@ -365,7 +365,7 @@ class Particle():
             intersect (np.ndarray of three `int`s):
             polyhedron (Polyhedron): the polyhedron we are running on
         """
-        self._change_face(edge, self.face, polyhedron)
+        self._change_face(edge, polyhedron)
         # self.face and self.trans_matrix changed
         faced_vector = self._count_moving_vector_through_edge(vector_move, polyhedron)
         faced_vector = faced_vector * \
@@ -399,7 +399,7 @@ class Particle():
         map_dot.trail.set_moment = iteration
         vector_move = self._get_vector_move()
 
-        for edge in edges:
+        for edge in polyhedron.edges:
             # check whether agent will cross the edge or not
             line1 = np.asarray([space_to_face(polyhedron.vertices[edge[0]], \
                                     self.coords, self.trans_matrix), \
