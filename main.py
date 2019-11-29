@@ -55,7 +55,7 @@ def add_particle(particles, coordinates, face, polyhedron):
         0
         ])
     move_vector = face_to_space(central_sensor, \
-        coordinates, transmission_matrix(face, polyhedron))
+        transmission_matrix(face, polyhedron))
     move_vector /= get_distance(np.asarray([0, 0, 0]), move_vector)
     move_vector *= Particle.SENSOR_OFFSET
 
@@ -101,7 +101,7 @@ def simulate(start_point_coordinates, initializing_face, \
                 )
             particle.rotate(smelled)
             particle.move(get_map_dot(particle.coords, \
-                simulation_map), iteration_number)
+                simulation_map), iteration_number, polyhedron)
 
         yield particles, simulation_map
 
