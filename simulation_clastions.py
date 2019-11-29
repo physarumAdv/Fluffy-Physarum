@@ -9,7 +9,7 @@ class Polyhedron():
     """
     A polyhedron for simulation
     Attributes:
-        vertices (np.ndarray V by 3 of int): the polyhedron 
+        vertices (np.ndarray V by 3): the polyhedron 
             vertices' coordinates
         edges (np.ndarray E by 2 of int): pairs of numbers
             of vertices, connected by edges (0-indexing)
@@ -21,7 +21,7 @@ class Polyhedron():
         """
         Initializes a polyhedron
         Parameters:
-            see the class attributes :)
+            vertices, faces: see the class attributes :)
         """
         self.vertices = vertices
         self.faces = faces
@@ -58,11 +58,11 @@ def space_to_face(point, origin, trans_matrix):
     """
     Returns coordinates of the point, relative to origin in its surface
     Parameters:
-        point (np.ndarray of three `int`s): the point's coordinates
-        origin (np.ndarray of three `int`s): the origin's coordinates
+        point (np.ndarray of three `float`s): the point's coordinates
+        origin (np.ndarray of three `float`s): the origin's coordinates
         trans_matrix (np.ndarray 3 by 3 of float): transmission matrix
     Returns:
-        np.ndarray of three `int`s: the answer
+        np.ndarray of three `float`s: the answer
     """
     delta_p = point - origin
     return trans_matrix @ delta_p
@@ -71,11 +71,11 @@ def face_to_space(point, origin, trans_matrix):
     """
     Returns a vector of P relative to origin in base space
     Parameters:
-        point (np.ndarray of three `int`s): the point's coordinates
-        origin (np.ndarray of three `int`s): the origin's coordinates
+        point (np.ndarray of three `float`s): the point's coordinates
+        origin (np.ndarray of three `float`s): the origin's coordinates
         trans_matrix (np.ndarray 3 by 3 of float): transmission matrix
     Returns:
-        np.ndarray of three `int`s: the answer
+        np.ndarray of three `float`s: the answer
     """
     C = np.linalg.inv(trans_matrix)
     return C @ point
@@ -84,7 +84,7 @@ def get_distance(a, b):
     """
     Get distance between two points in space
     Parameters:
-        a, b (np.ndarray of three `int`s): two point's coordinates
+        a, b (np.ndarray of three `float`s): two point's coordinates
     Returns:
         float: the answer 
     """
@@ -124,18 +124,18 @@ class Particle():
     A part of a mold in the model
     Particle is also known as agent
     Attributes:
-        SENSOR_ANGLE (int, degrees): the angle between the neighboring sensors
-        ROTATION_ANGLE (int, degrees): angle the particle rotates at
-        SENSOR_OFFSET: (int) distance from agent to sensor
-        STEP_SIZE (int): agent's step size
-        TRAIL_DEPTH (int): trail length the agent leaves
+        SENSOR_ANGLE (int or float, degrees): the angle between the neighboring sensors
+        ROTATION_ANGLE (int or float, degrees): angle the particle rotates at
+        SENSOR_OFFSET: (int or float) distance from agent to sensor
+        STEP_SIZE (int or float): agent's step size
+        TRAIL_DEPTH (int or float): trail length the agent leaves
 
-        coords (np.ndarray of three `int`s): agent's coordinates
+        coords (np.ndarray of three `float`s): agent's coordinates
         transmission_matrix (np.ndarray 3 by 3): transmission matrix for current face
-        left_sensor (np.ndarray of three `int`s): the left sensor's coordinates
-        central_sensor (np.ndarray of three `int`s): the central sensor's coordinates
-        right_sensor (np.ndarray of three `int`s): the right sensor's coordinates
-        face (np.ndarray of 'int's): vertices defining current agent's face
+        left_sensor (np.ndarray of three `float`s): the left sensor's coordinates
+        central_sensor (np.ndarray of three `float`s): the central sensor's coordinates
+        right_sensor (np.ndarray of three `float`s): the right sensor's coordinates
+        face (np.ndarray of 'int's): numbres of vertices defining current agent's face
     """
     SENSOR_ANGLE = 45
     ROTATION_ANGLE = 20
@@ -146,9 +146,9 @@ class Particle():
         """
         Initializing the particle(agent)
         Parameters:
-            coords (np.ndarray of three `int`s): coordinates of agent
-            central_sensor (np.ndarray of three `int`s): central sensor's coordinates
-            face (np.ndarray of 'int's): vertices defining current agent's face
+            coords (np.ndarray of three `float`s): coordinates of agent
+            central_sensor (np.ndarray of three `float`s): central sensor's coordinates
+            face (np.ndarray of 'float's): vertices defining current agent's face
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         self.food = 255
@@ -179,11 +179,11 @@ class Particle():
         """
         Rotates point with radius vector relative to agent's coordinates at the angle
         Parameters:
-            normal (np.ndarray of three `int`s): perpendicular to the diven face of the agent's face
-            radius (np.ndarray of three `int`s): vector from agent's coordinates to point
-            angle (int, degrees): angle the particle rotates
+            normal (np.ndarray of three `float`s): perpendicular to the diven face of the agent's face
+            radius (np.ndarray of three `float`s): vector from agent's coordinates to point
+            angle (int or float, degrees): angle the particle rotates
         Returns:
-            np.ndarray of three `int`s: new point's coordinates
+            np.ndarray of three `float`s: new point's coordinates
         """
         return (1 - np.cos(np.radians(angle)))*np.dot(normal, radius)*normal + \
                       np.cos(np.radians(angle))*radius + \
