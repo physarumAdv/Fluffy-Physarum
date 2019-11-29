@@ -29,7 +29,6 @@ class Visualizer():
                 j.append(face[a])
                 k.append(face[a + 1])
 
-        print(f'i : {i}; j : {j}; k : {k};')
         self.poly = go.Mesh3d(
             x=vx,
             y=vy,
@@ -38,10 +37,11 @@ class Visualizer():
             colorscale=[[0, 'grey'],
                         [0.5, 'mediumturquoise'],
                         [1, 'magenta']],
-            intensity=[0, 0.5, 1, 0],
+            intensity=np.random.rand(len(polyhedron.vertices)),
             i=i,
             j=j,
             k=k,
+            opacity=0.4,
             name='y',
             showscale=True)
 
