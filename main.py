@@ -12,16 +12,13 @@ polyhedron = Polyhedron(
     vertices=np.asarray([(0, 0, 0), (0, 0, cel), \
         (cel, 0, cel), (cel, 0, 0), (cel, cel, 0), \
         (0, cel, 0), (0, cel, cel), (cel, cel, cel)]),
-    faces=np.asarray([(0, 1, 2, 3), (0, 1, 6, 5), \
-        (0, 3, 4, 5), (2, 3, 4, 7), (1, 2, 7, 6), \
-        (4, 5, 6, 7)])
+    faces=np.asarray([(0, 1, 2, 3), (0, 5, 6, 1), \
+        (0, 3, 4, 5), (2, 7, 4, 3), (1, 6, 7, 2), \
+        (4, 7, 6, 5)])
     )
 initializing_face = (0, 3, 4, 5)
 
 start_point_coordinates = np.asarray((cel//2, cel//2, 0))
-
-simulation_map = {}
-particles = []
 
 def get_map_dot(coords, simulation_map):
     """Returns the map dot info
@@ -71,13 +68,10 @@ def add_particle(particles, coordinates, face, polyhedron):
     new_point.init_sensors_from_center(polyhedron)
     particles.append(new_point)
 
-def simulate(simulation_map, particles, \
-        start_point_coordinates, initializing_face, polyhedron):
+def simulate(start_point_coordinates, initializing_face, \
+        polyhedron):
     """Runs the simulation
     Parameters:
-        simulation_map (dict from np.ndarray of thee `int`s
-            to MapDot): the simulation map of food and trale
-        particles (list of `Particle`s): The model's particles
         start_point_coordinates (np.ndarray of three `int`s):
             the coordinates to initialize new particles at
         initializing_face (one-dimensional np.ndarray of `int`s):
@@ -86,6 +80,9 @@ def simulate(simulation_map, particles, \
         polyhedron (Polyhedron): the polyhedron to initialize
             new particles on
     """
+    simulation_map = {}
+    particles = []
+    
     iteration_number = 0
     while True:
         add_particle(particles, start_point_coordinates,
@@ -111,6 +108,6 @@ def simulate(simulation_map, particles, \
         iteration_number += 1
 
 if __name__ == "__main__":
-    simulation = simulate(simulation_map, particles, start_point_coordinates,
+    simulation = simulate(start_point_coordinates,
         initializing_face, polyhedron)
     list(simulation) # Run
