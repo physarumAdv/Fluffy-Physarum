@@ -17,7 +17,7 @@ class Polyhedron():
         faces (two-dimentional np.ndarray of int): the array
             of faces, where each face is given as an array of
             numbers of vertices on the face (vertices are 0-indexed).
-            Note: list the vertices clockwise watching 
+            Note: list the vertices clockwise watching
                 outside the polyhedron for each face
     """
     def __init__(self, vertices, faces):
@@ -155,6 +155,10 @@ class MapDot():
         self.food = food
         self.trail = TrailDot(float('-inf'))
 
+    def __repr__(self):
+        return f'<MapDot with food={self.food} and trail, ' \
+            f'set at {self.trail.set_moment}>'
+
 
 class Particle():
     """
@@ -189,7 +193,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         self.food = 255
-        self.coords = np.asarray(coords)
+        self.coords = np.asarray(coords).astype(float)
         self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
         self.face = np.asarray(face)
 
@@ -197,6 +201,9 @@ class Particle():
         self.central_sensor = np.asarray(central_sensor)
         self.right_sensor = np.zeros(3)
 
+    def __repr__(self):
+        return f'<Particle with coords={tuple(self.coords.tolist())} ' \
+            f'and food={self.food}>'
 
     def eat(self, map_dot):
         """
@@ -228,14 +235,14 @@ class Particle():
         Parameters:
             polyhedron (Polyhedron): the polyhedron we are running on
         """
-        normal = np.cross(polyhedron.vertices[self.face[1]] - polyhedron.vertices[self.face[0]], \
-                     polyhedron.vertices[self.face[2]] - polyhedron.vertices[self.face[0]])
+        normal = np.cross(polyhedron.vertices[self.face[2]] - polyhedron.vertices[self.face[0]], \
+                    polyhedron.vertices[self.face[1]] - polyhedron.vertices[self.face[0]])
         normal = normal / get_distance(normal, np.zeros((3)))
         radius = self.central_sensor - self.coords
         self.left_sensor = self._rotate_point_angle(normal, radius, self.SENSOR_ANGLE)
         self.right_sensor = self._rotate_point_angle(normal, radius, -self.SENSOR_ANGLE)
 
-        if np.dot(normal, np.cross(self.right_sensor, self.left_sensor)) > 0:
+        if np.dot(normal, np.cross(self.right_sensor - self.coords, self.left_sensor - self.coords)) < 0:
             self.left_sensor, self.right_sensor = self.right_sensor, self.left_sensor
 
     def get_sensors_values(self, sensors_map_dots, iteration):
@@ -250,8 +257,9 @@ class Particle():
         trail_under_sensor = np.zeros(3)
         sensors_values = np.zeros(3)
         for i in range(3):
-            if iteration - sensors_map_dots[i] <= self.TRAIL_DEPTH:
-                trail_under_sensor[i] = self.TRAIL_DEPTH + sensors_map_dots[i] - iteration
+            if iteration - sensors_map_dots[i].trail.set_moment <= self.TRAIL_DEPTH:
+                trail_under_sensor[i] = self.TRAIL_DEPTH + \
+                    sensors_map_dots[i].trail.set_moment - iteration
             sensors_values[i] = sensors_map_dots[i].food + trail_under_sensor[i]
         return sensors_values
 
@@ -262,9 +270,10 @@ class Particle():
             sensors_values (np.ndarray of three `int`s): food and trail sum of each sensors
         """
         sensors_values = np.asarray(sensors_values)
+        heading = None
         if random.randint(0, 10) == 0:
             # turn randomly
-            heading += random.randint(-1, 1) * self.ROTATION_ANGLE
+            heading = random.randint(-1, 1) * self.ROTATION_ANGLE
         else:
             if sensors_values[1] >= sensors_values[0] and sensors_values[1] >= sensors_values[2]:
                 heading = 0
@@ -411,10 +420,10 @@ class Particle():
         self._move_step_size(vector_move)
 
     def simple_visualizing(self, ax):
-        left_sensor = self.left_sensor.astype(int)
-        central_sensor = self.central_sensor.astype(int)
-        right_sensor = self.right_sensor.astype(int)
-        coords = self.coords.astype(int)
+        left_sensor = np.round(self.left_sensor)
+        central_sensor = np.round(self.central_sensor)
+        right_sensor = np.round(self.right_sensor)
+        coords = np.round(self.coords)
 
         ax.scatter3D(xs=coords[0], ys=coords[1], zs=coords[2], color='black')
         ax.scatter3D(xs=central_sensor[0], ys=central_sensor[1], zs=central_sensor[2], color='black')
