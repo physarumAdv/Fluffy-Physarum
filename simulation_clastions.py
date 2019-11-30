@@ -177,13 +177,16 @@ class Particle():
         central_sensor (np.ndarray of three `float`s): the central sensor's coordinates
         right_sensor (np.ndarray of three `float`s): the right sensor's coordinates
         face (np.ndarray of 'int's): numbres of vertices defining current agent's face
+
+        random_rotate_probability (int): the 1/probability of random rotate on each step,
+            for example if `random_rotate_probability` is 20, the probability is 1/20 = 0.05
     """
     SENSOR_ANGLE = 45
     ROTATION_ANGLE = 20
     SENSOR_OFFSET = 5
-    STEP_SIZE = 5
-    TRAIL_DEPTH = 5
-    def __init__(self, coords, central_sensor, face, polyhedron):
+    STEP_SIZE = 1
+    TRAIL_DEPTH = 10
+    def __init__(self, coords, central_sensor, face, polyhedron, random_rotate_probability=None):
         """
         Initializing the particle(agent)
         Parameters:
@@ -191,6 +194,9 @@ class Particle():
             central_sensor (np.ndarray of three `float`s): central sensor's coordinates
             face (np.ndarray of 'float's): vertices defining current agent's face
             polyhedron (Polyhedron): the polyhedron we are running on
+            random_rotate_probability (int, default 10): the 1/probability of random
+                rotate on each step, for example if `random_rotate_probability` is 20,
+                the probability is 1/20 = 0.05
         """
         self.food = 255
         self.coords = np.asarray(coords).astype(float)
@@ -200,6 +206,10 @@ class Particle():
         self.left_sensor = np.zeros(3)
         self.central_sensor = np.asarray(central_sensor)
         self.right_sensor = np.zeros(3)
+
+        if random_rotate_probability is None:
+            random_rotate_probability = 10
+        self.random_rotate_probability = random_rotate_probability
 
     def __repr__(self):
         return f'<Particle with coords={tuple(self.coords.tolist())} ' \
@@ -271,7 +281,7 @@ class Particle():
         """
         sensors_values = np.asarray(sensors_values)
         heading = None
-        if random.randint(0, 10) == 0:
+        if random.randint(1, self.random_rotate_probability) == 1:
             # turn randomly
             heading = random.randint(-1, 1) * self.ROTATION_ANGLE
         else:

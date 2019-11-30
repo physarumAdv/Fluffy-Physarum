@@ -37,7 +37,8 @@ def get_map_dot(coords, simulation_map):
     return simulation_map[coords]
 
 
-def add_particle(particles, coordinates, face, polyhedron):
+def add_particle(particles, coordinates, face, polyhedron,
+        particle_random_rotate_probability=None):
     """Adds a prticle to the simulation
     Parameters:
         particles (list of `Particle`s): The model's particles
@@ -64,13 +65,14 @@ def add_particle(particles, coordinates, face, polyhedron):
         coordinates,
         coordinates + move_vector,
         face,
-        polyhedron
+        polyhedron,
+        particle_random_rotate_probability
         )
     new_point.init_sensors_from_center(polyhedron)
     particles.append(new_point)
 
 def simulate(start_point_coordinates, initializing_face, \
-        polyhedron):
+        polyhedron, particle_random_rotate_probability=None):
     """Runs the simulation
     Parameters:
         start_point_coordinates (np.ndarray of three `int`s):
@@ -80,6 +82,8 @@ def simulate(start_point_coordinates, initializing_face, \
             (given as an array of face's vertices' numbers)
         polyhedron (Polyhedron): the polyhedron to initialize
             new particles on
+        particle_random_rotate_probability (int, optional):
+            the parameter for particles initialization
     """
     simulation_map = {}
     particles = []
@@ -87,7 +91,7 @@ def simulate(start_point_coordinates, initializing_face, \
     iteration_number = 0
     while True:
         add_particle(particles, start_point_coordinates,
-            initializing_face, polyhedron)
+            initializing_face, polyhedron, particle_random_rotate_probability)
         for particle in particles:
             particle.eat(get_map_dot(
                 particle.coords,
@@ -110,13 +114,15 @@ def simulate(start_point_coordinates, initializing_face, \
 
 if __name__ == "__main__":
     simulation = simulate(start_point_coordinates,
-        initializing_face, polyhedron)
-    visualizer = Visualizer(polyhedron)
+        initializing_face, polyhedron, 15)
+    visualizer = Visualizer(polyhedron, size=3)
 
     i = 0
     while True:
         particles, simulation_map = next(simulation)
-        visualizer.add_frame(particles, simulation_map)
-        i += 1
-        if i % 100 == 0:
+        if i % 10 == 0:
+            visualizer.add_frame(particles, simulation_map)
+        if(i % 300 == 0) and (i != 0):
             visualizer.redraw()
+
+        i += 1
