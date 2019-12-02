@@ -185,7 +185,7 @@ class Particle():
     ROTATION_ANGLE = 20
     SENSOR_OFFSET = 5
     STEP_SIZE = 1
-    TRAIL_DEPTH = 10
+    TRAIL_DEPTH = 255
     def __init__(self, coords, central_sensor, face, polyhedron, random_rotate_probability=None):
         """
         Initializing the particle(agent)
@@ -194,7 +194,7 @@ class Particle():
             central_sensor (np.ndarray of three `float`s): central sensor's coordinates
             face (np.ndarray of 'float's): vertices defining current agent's face
             polyhedron (Polyhedron): the polyhedron we are running on
-            random_rotate_probability (int, default 10): the 1/probability of random
+            random_rotate_probability (int, default 15): the 1/probability of random
                 rotate on each step, for example if `random_rotate_probability` is 20,
                 the probability is 1/20 = 0.05
         """
@@ -208,7 +208,7 @@ class Particle():
         self.right_sensor = np.zeros(3)
 
         if random_rotate_probability is None:
-            random_rotate_probability = 10
+            random_rotate_probability = 15
         self.random_rotate_probability = random_rotate_probability
 
     def __repr__(self):
