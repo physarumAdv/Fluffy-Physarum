@@ -1,4 +1,6 @@
 from random import randint
+from multiprocessing import cpu_count
+from threading import Thread
 
 import numpy as np
 
@@ -37,6 +39,21 @@ def get_map_dot(coords, simulation_map):
     return simulation_map[coords]
 
 
+def chunkify(l, n_of_chunks):
+    """Splits the given list into parts of approximately
+    equal length
+    Parameters:
+        l (list): The list to be splited
+        n_of_chunks (int): Number of chunks to ger
+    Yielda:
+        list: The chunks
+    """
+    chunk_length = len(l) // n_of_chunks
+    for i in range(n_of_chunks - 1):
+        yield l[i*chunk_length:(i+1)*chunk_length]
+    yield l[(n_of_chunks-1)*chunk_length:]
+
+
 def add_particle(particles, coordinates, face, polyhedron,
         particle_random_rotate_probability=None):
     """Adds a prticle to the simulation
@@ -71,28 +88,13 @@ def add_particle(particles, coordinates, face, polyhedron,
     new_point.init_sensors_from_center(polyhedron)
     particles.append(new_point)
 
-def simulate(start_point_coordinates, initializing_face, \
-        polyhedron, particle_random_rotate_probability=None):
-    """Runs the simulation
+def _process_particles(particles, iteration_number, polyhedron, simulation_map):
+    """A part of `simulate`: processes the given particles
     Parameters:
-        start_point_coordinates (np.ndarray of three `int`s):
-            the coordinates to initialize new particles at
-        initializing_face (one-dimensional np.ndarray of `int`s):
-            the polyhedron's face to initialize new particles on
-            (given as an array of face's vertices' numbers)
-        polyhedron (Polyhedron): the polyhedron to initialize
-            new particles on
-        particle_random_rotate_probability (int, optional):
-            the parameter for particles initialization
+        particles (list of `Particle`s): the particles to be processed
+        iteration_number, polyhedron, simulation_map: see the `simulate` docs
     """
-    simulation_map = {}
-    particles = []
-    
-    iteration_number = 0
-    while True:
-        add_particle(particles, start_point_coordinates,
-            initializing_face, polyhedron, particle_random_rotate_probability)
-        for particle in particles:
+    for particle in particles:
             particle.eat(get_map_dot(
                 particle.coords,
                 simulation_map
@@ -107,6 +109,38 @@ def simulate(start_point_coordinates, initializing_face, \
             particle.rotate(smelled)
             particle.move(get_map_dot(particle.coords, \
                 simulation_map), iteration_number, polyhedron)
+
+def simulate(start_point_coordinates, initializing_face, \
+        polyhedron, particle_random_rotate_probability=None):
+    """Runs the simulation
+    Parameters:
+        start_point_coordinates (np.ndarray of three `int`s):
+            the coordinates to initialize new particles at
+        initializing_face (one-dimensional np.ndarray of `int`s):
+            the polyhedron's face to initialize new particles on
+            (given as an array of face's vertices' numbers)
+        polyhedron (Polyhedron): the polyhedron to initialize
+            new particles on
+        particle_random_rotate_probability (int, optional):
+            the parameter for particles initialization
+    """
+    n_of_threads = cpu_count() * 2
+
+    simulation_map = {}
+    particles = []
+    
+    iteration_number = 0
+    while True:
+        add_particle(particles, start_point_coordinates,
+            initializing_face, polyhedron, particle_random_rotate_probability)
+        splited_particles = chunkify(particles, n_of_threads)
+        threads = []
+        for particles_chunk in splited_particles:
+            threads.append(Thread(target=_process_particles, args=(particles_chunk,
+                iteration_number, polyhedron, simulation_map)))
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
 
         yield particles, simulation_map
 
