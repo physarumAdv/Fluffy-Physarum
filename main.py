@@ -114,15 +114,17 @@ def simulate(start_point_coordinates, initializing_face, \
 
 if __name__ == "__main__":
     simulation = simulate(start_point_coordinates,
-        initializing_face, polyhedron, 15)
+        initializing_face, polyhedron, int(input("Random rotate probability (int): ")))
     visualizer = Visualizer(polyhedron, size=3)
 
+    frames_adding_frequency = int(input("Frames frequency adding (int): "))
+    redraw_frequency = int(input("Redraw frequency (int): "))
     i = 0
     while True:
         particles, simulation_map = next(simulation)
-        if i % 10 == 0:
+        if i % frames_adding_frequency == 0:
             visualizer.add_frame(particles, simulation_map)
-        if(i % 300 == 0) and (i != 0):
+        if(i % redraw_frequency == 0) and (i != 0):
             visualizer.redraw()
 
         i += 1
