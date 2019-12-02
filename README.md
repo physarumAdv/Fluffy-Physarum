@@ -7,8 +7,6 @@ After a short break we decided to resume the thread, and write *a fully new code
 * Main [article](https://docs.google.com/document/d/1ClbqxgD-cvxd_-Bv_UkfGLSRMU6wBPmJgWGVIAutvJk/edit?usp=sharing) for yandex zen
 * A small google-[presentation](https://docs.google.com/presentation/d/19BZZc_2k-FIpkyHzS-j621PmGsNUIOUnv2AHINWfEh8/edit?usp=sharing) made from this [article](http://eprints.uwe.ac.uk/15260/1/artl.2010.16.2.pdf)
 * Site with [selection](https://www.sagejenson.com/physarum) from last article
-* My summer school [presentation]()
-
 
 ![Screenshot](readme_images/file-535.png)
 ---
@@ -20,5 +18,10 @@ Green spots - food.
 
 ## Requirements
 ```
-  pip install vispy pyqt5 numpy
+  pip install numpy matplotlib plotly pandas
+```
+
+## Executing
+```
+  python3 main.py
 ```
