@@ -168,7 +168,6 @@ class Particle():
         SENSOR_ANGLE (int or float, degrees): the angle between the neighboring sensors
         ROTATION_ANGLE (int or float, degrees): angle the particle rotates at
         SENSOR_OFFSET: (int or float) distance from agent to sensor
-        STEP_SIZE (int or float): agent's step size
         TRAIL_DEPTH (int or float): trail length the agent leaves
 
         coords (np.ndarray of three `float`s): agent's coordinates
@@ -184,7 +183,6 @@ class Particle():
     SENSOR_ANGLE = 45
     ROTATION_ANGLE = 20
     SENSOR_OFFSET = 5
-    STEP_SIZE = 1
     TRAIL_DEPTH = 255
     def __init__(self, coords, central_sensor, face, polyhedron, random_rotate_probability=None):
         """
@@ -317,7 +315,7 @@ class Particle():
         Returns:
             np.ndarray of three `int`s: the answer
         """
-        return self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+        return (self.central_sensor - self.coords) / self.SENSOR_OFFSET
 
     def _change_face(self, edge, polyhedron):
         """
@@ -379,7 +377,7 @@ class Particle():
         # self.face and self.trans_matrix changed
         faced_vector = self._count_moving_vector_through_edge(vector_move, polyhedron)
         faced_vector = faced_vector * \
-                      (self.STEP_SIZE - get_distance(intersect, np.zeros(3))) / \
+                      (1 - get_distance(intersect, np.zeros(3))) / \
                        get_distance(faced_vector, np.zeros(3))
         self.coords = self.coords + intersect + faced_vector
         self.central_sensor = self.coords + faced_vector * self.SENSOR_OFFSET / \
