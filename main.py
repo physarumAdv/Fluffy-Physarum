@@ -1,6 +1,6 @@
 from random import randint
 from multiprocessing import cpu_count
-from threading import Thread
+from threading import Thread, Lock
 
 import numpy as np
 
@@ -88,27 +88,30 @@ def add_particle(particles, coordinates, face, polyhedron,
     new_point.init_sensors_from_center(polyhedron)
     particles.append(new_point)
 
-def _process_particles(particles, iteration_number, polyhedron, simulation_map):
+def _process_particles(particles, iteration_number, polyhedron, \
+    simulation_map, map_edit_lock):
     """A part of `simulate`: processes the given particles
     Parameters:
         particles (list of `Particle`s): the particles to be processed
         iteration_number, polyhedron, simulation_map: see the `simulate` docs
+        map_edit_lock (threading.Lock): the mutex for editing the simulation map
     """
     for particle in particles:
+        with map_edit_lock:
             particle.eat(get_map_dot(
                 particle.coords,
                 simulation_map
                 ))
-            smelled = particle.get_sensors_values(
-                tuple(get_map_dot(i, simulation_map) for i in \
-                    (particle.left_sensor, \
-                        particle.central_sensor, \
-                        particle.right_sensor)),
-                iteration_number
-                )
-            particle.rotate(smelled)
-            particle.move(get_map_dot(particle.coords, \
-                simulation_map), iteration_number, polyhedron)
+        smelled = particle.get_sensors_values(
+            tuple(get_map_dot(i, simulation_map) for i in \
+                (particle.left_sensor, \
+                    particle.central_sensor, \
+                    particle.right_sensor)),
+            iteration_number
+            )
+        particle.rotate(smelled)
+        particle.move(get_map_dot(particle.coords, \
+            simulation_map), iteration_number, polyhedron)
 
 def simulate(start_point_coordinates, initializing_face, \
         polyhedron, particle_random_rotate_probability=None):
@@ -124,12 +127,13 @@ def simulate(start_point_coordinates, initializing_face, \
         particle_random_rotate_probability (int, optional):
             the parameter for particles initialization
     """
-    n_of_threads = cpu_count() * 2
+    n_of_threads = cpu_count()
 
     simulation_map = {}
     particles = []
     
     iteration_number = 0
+    map_edit_lock = Lock()
     while True:
         add_particle(particles, start_point_coordinates,
             initializing_face, polyhedron, particle_random_rotate_probability)
@@ -137,7 +141,7 @@ def simulate(start_point_coordinates, initializing_face, \
         threads = []
         for particles_chunk in splited_particles:
             threads.append(Thread(target=_process_particles, args=(particles_chunk,
-                iteration_number, polyhedron, simulation_map)))
+                iteration_number, polyhedron, simulation_map, map_edit_lock)))
             threads[-1].start()
         for thread in threads:
             thread.join()
@@ -147,6 +151,8 @@ def simulate(start_point_coordinates, initializing_face, \
         iteration_number += 1
 
 if __name__ == "__main__":
+    from sys import stdout
+
     simulation = simulate(start_point_coordinates,
         initializing_face, polyhedron, int(input("Random rotate probability (int): ")))
     visualizer = Visualizer(polyhedron, size=3)
@@ -155,6 +161,8 @@ if __name__ == "__main__":
     redraw_frequency = int(input("Redraw frequency (int): "))
     i = 0
     while True:
+        print(i, end=' ')
+        stdout.flush()
         particles, simulation_map = next(simulation)
         if i % frames_adding_frequency == 0:
             visualizer.add_frame(particles, simulation_map)
