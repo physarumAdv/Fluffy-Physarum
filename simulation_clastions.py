@@ -35,6 +35,7 @@ class Polyhedron():
                 self.edges.add(tuple(vertices))
         self.edges = np.asarray(list(self.edges))
 
+EPSILON = 10**(-7)
 
 def transmission_matrix(face, polyhedron):
     """
@@ -121,12 +122,8 @@ def is_in_segment(point, segment):
         True if point belongs to segment
         False if point does not belong to segment
     """
-    if (point[0] >= min(segment[0, 0], segment[1, 0]) and \
-        point[0] <= max(segment[0, 0], segment[1, 0])) and \
-       (point[1] >= min(segment[0, 1], segment[1, 1]) and \
-        point[1] <= max(segment[0, 1], segment[1, 1])) and \
-       (point[2] >= min(segment[0, 2], segment[1, 2]) and \
-        point[2] <= max(segment[0, 2], segment[1, 2])):
+    if get_distance(point, segment[1]) + get_distance(point, segment[0]) - \
+            get_distance(segment[0], segment[1]) <= EPSILON:
         return True
     else:
         return False
@@ -308,6 +305,13 @@ class Particle():
             np.ndarray of three `int`s: the answer
         """
         return self.STEP_SIZE * (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+        
+    def _is_edge_belong_face(self, edge, face):
+        """
+        
+        """
+        return  len(np.argwhere(face==edge[0])) > 0 \
+                and len(np.argwhere(face==edge[1])) > 0
 
     def _change_face(self, edge, polyhedron):
         """
@@ -318,8 +322,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         for face in polyhedron.faces:
-            if (face != self.face).any() and len(np.argwhere(face==edge[0])) > 0 \
-                                 and len(np.argwhere(face==edge[1])) > 0:
+            if (face != self.face).any() and self._is_edge_belong_face(edge, face):
                 self.face = face
                 break
         self.trans_matrix = transmission_matrix(self.face, polyhedron)
@@ -400,7 +403,9 @@ class Particle():
         vector_move = self._get_vector_move()
 
         for edge in polyhedron.edges:
-            # check whether agent will cross the edge or not
+            if not self._is_edge_belong_face(edge, self.face):
+                pass
+            # check whether agent will cross the edge line or not
             line1 = np.asarray([space_to_face(polyhedron.vertices[edge[0]], \
                                     self.coords, self.trans_matrix), \
                                 space_to_face(polyhedron.vertices[edge[1]], \
@@ -411,13 +416,42 @@ class Particle():
                                     self.coords, self.trans_matrix)])
             intersect = line_intersection(line1, line2)
             if intersect is not None:
-                if is_in_segment(intersect, line1) and \
-                        is_in_segment(intersect, line2):
-                    intersect = face_to_space(intersect, self.trans_matrix)
+                intersect = face_to_space(intersect, self.trans_matrix)
+                line1 = np.asarray([polyhedron.vertices[edge[0]], \
+                                    polyhedron.vertices[edge[1]]])
+                line2 = np.asarray([self.coords, self.coords + vector_move])
+                if is_in_segment(intersect + self.coords, line1) and \
+                        is_in_segment(intersect + self.coords, line2) and \
+                        get_distance(intersect, np.zeros(3)) > EPSILON:
                     self._move_throught_edge(vector_move, edge, intersect, polyhedron)
                     return
 
         self._move_step_size(vector_move)
+        
+    def check_is_intersect(self, polyhedron):
+        vector_move = self._get_vector_move()
+
+        for edge in polyhedron.edges:
+            # check whether agent will cross the edge or not
+            line1 = np.asarray([space_to_face(polyhedron.vertices[edge[0]], \
+                                    self.coords, self.trans_matrix), \
+                                space_to_face(polyhedron.vertices[edge[1]], \
+                                    self.coords, self.trans_matrix)])
+            line2 = np.asarray([space_to_face(self.coords, \
+                                    self.coords, self.trans_matrix), \
+                                space_to_face(self.coords + vector_move, \
+                                    self.coords, self.trans_matrix)])
+            intersect = line_intersection(line1, line2)
+            print(intersect, line1, line2)
+            if intersect is not None:
+                if is_in_segment(intersect, line1) and \
+                        is_in_segment(intersect, line2):
+                    intersect = face_to_space(intersect, self.trans_matrix)
+                    self._move_throught_edge(vector_move, edge, intersect, polyhedron)
+                    return intersect
+        
+        return None
+
 
     def simple_visualizing(self, ax):
         left_sensor = np.round(self.left_sensor)
@@ -435,14 +469,18 @@ class Particle():
 
 
 if __name__ == "__main__":
-    triangle = Polyhedron(vertices=np.array([[0., 0, 0], [0., 10, 0], [10., 0, 0]]), edges=[], faces=[0, 1, 2])
-    surface = [0, 1, 2]
-    part = Particle([0., 0, 0], [5., 0, 0], surface, triangle)
+    triangle = Polyhedron(vertices=np.array([[0., 0, 0], [0., 10, 0], [10., 10, 0], [0, 10., 0], 
+                                [0, 0, 10.], [10, 0., 10], [10, 10., 10], [0, 10, 10.]]), 
+                                faces=np.array([[0, 1, 2, 3], [0, 4, 5, 1], [4, 7, 6, 5], [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0]]))
+    face = triangle.faces[0]
+    part = Particle([9.5, 5, 0], [14.5, 5, 0], face, triangle)
     part.init_sensors_from_center(triangle)
     fig = plt.figure()
     ax = plt.axes(projection='3d')
 
-    for i in range(0, 5):
+    for i in range(0, 2):
         part.simple_visualizing(ax)
-        part.rotate(np.array([10., 0, 0]))
+        intersect = part.check_is_intersect(triangle)
+        print(intersect)
+        
     plt.show()
