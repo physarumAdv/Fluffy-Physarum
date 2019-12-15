@@ -194,9 +194,9 @@ class Particle():
         self.trans_matrix = np.asarray(transmission_matrix(face, polyhedron))
         self.face = np.asarray(face)
 
-        self.left_sensor = np.zeros(3)
-        self.central_sensor = np.asarray(central_sensor)
-        self.right_sensor = np.zeros(3)
+        self.left_sensor = np.zeros(3).astype(float)
+        self.central_sensor = np.asarray(central_sensor).astype(float)
+        self.right_sensor = np.zeros(3).astype(float)
 
     def __repr__(self):
         return f'<Particle with coords={tuple(self.coords.tolist())} ' \
