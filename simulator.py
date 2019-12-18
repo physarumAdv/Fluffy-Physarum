@@ -4,8 +4,8 @@ from threading import Thread, Lock
 
 import numpy as np
 
-from simulation_clastions import Polyhedron, TrailDot, MapDot, \
-    Particle, transmission_matrix, face_to_space, get_distance
+from simulation_clastions import Polyhedron, TrailDot, \
+    MapDot, Particle, get_distance
 from visualizer import Visualizer
 
 
@@ -107,25 +107,15 @@ class Simulator:
         Adds `particles_per_iteration` particles to the simulation
         """
         for _ in range(self.particles_per_iteration):
-            angle = np.radians(randint(1, 360))
-            central_sensor = np.asarray([
-                Particle.SENSOR_OFFSET * np.cos(angle),
-                Particle.SENSOR_OFFSET * np.sin(angle),
-                0
-                ])
-            move_vector = face_to_space(central_sensor, \
-                transmission_matrix(self.initializing_face, self.polyhedron))
-            move_vector /= get_distance(np.asarray([0, 0, 0]), move_vector)
-            move_vector *= Particle.SENSOR_OFFSET
+            angle = randint(1, 360)
 
             new_point = Particle(
                 self.start_point_coordinates,
-                self.start_point_coordinates + move_vector,
+                angle,
                 self.initializing_face,
                 self.polyhedron,
                 self.particle_random_rotate_probability
                 )
-            new_point.init_sensors_from_center(self.polyhedron)
             self.particles.append(new_point)
 
 
