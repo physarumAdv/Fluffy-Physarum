@@ -158,7 +158,7 @@ class Simulator:
 if __name__ == "__main__":
     from sys import stdout
 
-    cel = 1000 # cube_edge_length
+    cel = int(input("Cube edge length (int): "))
 
     polyhedron = Polyhedron(
         vertices=np.asarray([(0, 0, 0), (0, 0, cel), \
