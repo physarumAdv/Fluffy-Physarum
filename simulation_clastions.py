@@ -26,8 +26,8 @@ class Polyhedron():
         Parameters:
             vertices, faces: see the class attributes :)
         """
-        self.vertices = vertices
-        self.faces = faces
+        self.vertices = np.asarray(vertices).astype(float)
+        self.faces = np.asarray(faces)
         self.edges = set()
         for face in self.faces:
             for i in range(len(face) - 1):

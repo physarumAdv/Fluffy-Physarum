@@ -1,6 +1,7 @@
 from random import randint
 from multiprocessing import cpu_count
 from threading import Thread, Lock
+import json
 
 import numpy as np
 
@@ -158,19 +159,18 @@ class Simulator:
 if __name__ == "__main__":
     from sys import stdout
 
-    cel = int(input("Cube edge length (int): "))
+    cel = int(input("Polyhedron scale (int): "))
+    polyhedron_file_path = input("Polyhedron file path (str): ")
 
+    with open(polyhedron_file_path, "r") as f:
+        vertices, faces, initializing_face, start_point_coordinates = \
+            (np.asarray(json.loads(line)) for line in f.readlines())
+    vertices *= cel
+    start_point_coordinates *= cel
     polyhedron = Polyhedron(
-        vertices=np.asarray([(0, 0, 0), (0, 0, cel), \
-            (cel, 0, cel), (cel, 0, 0), (cel, cel, 0), \
-            (0, cel, 0), (0, cel, cel), (cel, cel, cel)]),
-        faces=np.asarray([(0, 1, 2, 3), (0, 5, 6, 1), \
-            (0, 3, 4, 5), (2, 7, 4, 3), (1, 6, 7, 2), \
-            (4, 7, 6, 5)])
+        vertices=vertices,
+        faces=faces
         )
-    initializing_face = (0, 3, 4, 5)
-
-    start_point_coordinates = np.asarray((cel//2, cel//2, 0))
 
     simulator = Simulator(polyhedron, initializing_face,
         start_point_coordinates,
