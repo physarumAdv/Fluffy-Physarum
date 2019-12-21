@@ -332,11 +332,11 @@ class Particle():
         normal_finish = normal_finish / get_distance(normal_finish, np.zeros(3))
         vector_move = vector_move / get_distance(vector_move, np.zeros(3))
 
-        # counting angle between faces
-        phi = np.arccos(np.dot(normal_start, normal_finish) / \
+        # calculating angle between faces
+        phi = np.pi - np.arccos(np.dot(normal_start, normal_finish) / \
                     get_distance(normal_start, np.zeros(3)) / \
                     get_distance(normal_finish, np.zeros(3)))
-        # counting moving vector angle
+        # calculating moving vector angle
         alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
         faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
                         np.sin(alpha)/np.sin(phi) + \
