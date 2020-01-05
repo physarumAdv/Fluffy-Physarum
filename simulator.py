@@ -110,13 +110,13 @@ class Simulator:
             self.particles.append(new_point)
 
 
-    def _process_particles(self, particles):
+    def step(self):
         """
-        Process the given group of particles, using the simulation rules
-        Parameters:
-            particles (list of `Particle`s): the particles to be processed
+        Executes one simulation step
         """
-        for particle in particles:
+        self.add_particles()
+        
+        for particle in self.particles:
             particle.eat(self.get_map_dot(particle.coords))
             smelled = particle.get_sensors_values(
                 tuple(self.get_map_dot(i) for i in (particle.left_sensor,
@@ -126,14 +126,6 @@ class Simulator:
             particle.rotate(smelled)
             particle.move(self.get_map_dot(particle.coords), self.iteration,
                 self.polyhedron)
-
-
-    def step(self):
-        """
-        Executes one simulation step
-        """
-        self.add_particles()
-        self._process_particles(self.particles)
 
         self.iteration += 1
 
