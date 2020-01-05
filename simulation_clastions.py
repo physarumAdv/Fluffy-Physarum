@@ -24,7 +24,7 @@ class Polyhedron():
         """
         Initializes a polyhedron
         Parameters:
-            vertices, faces: see the class attributes :)
+            vertices, faces: see the class docs
         """
         self.vertices = np.asarray(vertices).astype(float)
         self.faces = np.asarray(faces)

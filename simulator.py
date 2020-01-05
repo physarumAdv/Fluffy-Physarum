@@ -1,6 +1,4 @@
 from random import randint
-from multiprocessing import cpu_count
-from threading import Thread, Lock
 import json
 
 import numpy as np
@@ -42,26 +40,23 @@ class Simulator:
             the simulation map
         iteration (int): the number of current simulation iteration
 
-        map_edit_lock (threading.Lock): the mutex for editing the simulation map
-
         particles_per_iteration (int): the number of new particles to be created
             on each simulation iteration
         particle_random_rotate_probability (int): the 1/probability of random
             rotate on each step, for example if `random_rotate_probability` is 20,
             the probability is 1/20 = 0.05
-        n_of_threads (int): the maximum number of threads to run during a step
     """
     def __init__(self, polyhedron, initializing_face, start_point_coordinates,
                 n_of_new_particles_per_iteration=None,
-                particle_random_rotate_probability=None, n_of_threads=None):
+                particle_random_rotate_probability=None):
         """
         Initializes a Simulator object
         Parameters:
             polyhedron (Polyhedron): the polyhedron to initialize new particles
                 on
             initializing_face, start_point_coordinates,
-                n_of_new_particles_per_iteration, particle_random_rotate_probability,
-                n_of_threads: see the class attributes
+                n_of_new_particles_per_iteration, particle_random_rotate_probability:
+                see the class docs
         """
         self.polyhedron = polyhedron
         self.initializing_face = initializing_face
@@ -70,7 +65,6 @@ class Simulator:
         self.particles = []
         self.simulation_map = {}
         self.iteration = 0
-        self.map_edit_lock = Lock()
 
         if n_of_new_particles_per_iteration is None:
             self.particles_per_iteration = 10
@@ -83,10 +77,6 @@ class Simulator:
             self.particle_random_rotate_probability = \
                     particle_random_rotate_probability
 
-        if n_of_threads is None:
-            self.n_of_threads = cpu_count()
-        else:
-            self.n_of_threads = n_of_threads
 
     def get_map_dot(self, coords):
         """
@@ -127,8 +117,7 @@ class Simulator:
             particles (list of `Particle`s): the particles to be processed
         """
         for particle in particles:
-            with self.map_edit_lock:
-                particle.eat(self.get_map_dot(particle.coords))
+            particle.eat(self.get_map_dot(particle.coords))
             smelled = particle.get_sensors_values(
                 tuple(self.get_map_dot(i) for i in (particle.left_sensor,
                     particle.central_sensor, particle.right_sensor)),
@@ -144,14 +133,7 @@ class Simulator:
         Executes one simulation step
         """
         self.add_particles()
-        splited_particles = chunkify(self.particles, self.n_of_threads)
-        threads = []
-        for particles_chunk in splited_particles:
-            threads.append(Thread(target=self._process_particles,
-                args=(particles_chunk,)))
-            threads[-1].start()
-        for thread in threads:
-            thread.join()
+        self._process_particles(self.particles)
 
         self.iteration += 1
 
