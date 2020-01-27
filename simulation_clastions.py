@@ -29,9 +29,6 @@ class Polyhedron():
         IMPORTANT NOTE: list the vertices clockwise watching
             outside the polyhedron for each face
         """
-        assert(type(vertices) == np.ndarray) # To be removed
-        assert(type(faces) == np.ndarray and faces.dtype == int) # To be removed
-
         self.vertices = vertices.astype(float)
         self.faces = faces
         self.edges = set()
@@ -188,7 +185,6 @@ class Particle():
                  get_distance(radius, _zeros)
         self.central_sensor = self._rotate_point_angle(normal, radius, angle)
         
-        assert(np.zeros(3).dtype == float) # To be removed
         self.left_sensor = np.zeros(3)
         self.right_sensor = np.zeros(3)
         self._init_sensors_from_center(polyhedron)
@@ -270,7 +266,6 @@ class Particle():
             sensors_values (np.ndarray of three `int`s): the combination of food
                 and trail for each of the sensors
         """
-        assert(type(sensors_values) == np.ndarray) # To be removed
         # turn right by default:
         heading = self.ROTATION_ANGLE
         if random.randint(1, self.random_rotate_probability) == 1:

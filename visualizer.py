@@ -12,7 +12,6 @@ class Frame():
 
         if len(particles):
             coords = list(map(lambda p: p.coords, particles))
-            assert(all(type(i) == np.ndarray) for i in coords) # To be removed
             coords = np.asarray(coords)
             self.x, self.y, self.z = coords.swapaxes(0, 1)
 
