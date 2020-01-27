@@ -15,19 +15,19 @@ class Polyhedron():
     Attributes:
         vertices (np.ndarray V by 3): the polyhedron
             vertices' coordinates
-        edges (np.ndarray E by 2 of int): pairs of numbers
-            of vertices, connected by edges (0-indexing)
-        faces (two-dimentional np.ndarray of int): the array
+        edges (np.ndarray E by 2 of `int`s): pairs of numbers
+            of vertices, connected by edges (vertices are 0-indexed)
+        faces (two-dimentional np.ndarray of `int`s): the array
             of faces, where each face is given as an array of
             numbers of vertices on the face (vertices are 0-indexed).
-            Note: list the vertices clockwise watching
-                outside the polyhedron for each face
     """
     def __init__(self, vertices, faces):
         """
         Initializes a polyhedron
         Parameters:
             vertices, faces: see the class docs
+        IMPORTANT NOTE: list the vertices clockwise watching
+            outside the polyhedron for each face
         """
         assert(type(vertices) == np.ndarray) # To be removed
         assert(type(faces) == np.ndarray and faces.dtype == int) # To be removed
@@ -49,19 +49,19 @@ def get_distance(a, b):
     Parameters:
         a, b (np.ndarray of three `float`s): two point's coordinates
     Returns:
-        float: the answer
+        float: distance between the points
     """
     return np.sqrt(np.sum((a - b)**2))
 
 def line_intersection(line1, line2):
     """
     Returns the point of two lines intersection or 
-            None if they are parallel
+        None if they are parallel
     Parameters:
-        line1, line2 (np.ndarray 2 by 3 of float): two points on line
+        line1, line2 (np.ndarray 2 by 3 of `float`s): two points on line
     Returns:
-        np.ndarray of three `float`s: if lines intersect
-        NoneType: if lines are parallel
+        np.ndarray of three `float`s: the lines intersection point (if they intercect)
+        NoneType: `None` (if lines are parallel)
     """
     pointA = line1[0]
     pointB = line2[0]
@@ -89,8 +89,8 @@ def is_in_segment(point, segment):
     """
     Checks if the point is in segment
     Parameters:
-        point (np.ndarray of three `int`s): the point to check
-        segment (np.ndarray 2 by 3 of int): two points defining a segment
+        point (np.ndarray of three numerics): the point to be checked
+        segment (np.ndarray 2 by 3 of numerics): two points defining a segment
     Returns:
         bool: True if point belongs to segment, False otherwise
     """
@@ -98,13 +98,25 @@ def is_in_segment(point, segment):
             get_distance(segment[0], segment[1]) <= EPSILON)
 
 
+def edge_belongs_to_face(edge, face):
+    """
+    Returns whether the edge belongs to face
+    Parameters:
+        edge (np.ndarray of two `int`s):
+        face (np.ndarray of 'int's): vertices defining current agent's face
+    Returns:
+        bool: True if the edge belongs to face, False otherwise
+    """
+    return (face==edge[0]).any() and (face==edge[1]).any()
+
+
 class TrailDot():
     """
     A smallest section of a trail
     Attributes:
-        set_moment (int or float): The simulation iteration number,
-            when the trail dot was created. Note: it's either
-            integer, or `float('-inf')`
+        set_moment (numeric): The simulation iteration number,
+            when the trail dot was created. Note: it either equals to
+            an integer, or `float('-inf')`
     """
     def __init__(self, set_moment):
         self.set_moment = set_moment
@@ -131,10 +143,10 @@ class Particle():
     A part of a mold in the model
     Particle is also known as agent
     Attributes:
-        SENSOR_ANGLE (int or float, degrees): the angle between the neighboring sensors
-        ROTATION_ANGLE (int or float, degrees): angle the particle rotates at
-        SENSOR_OFFSET: (int or float) distance from agent to sensor
-        TRAIL_DEPTH (int or float): trail length the agent leaves
+        SENSOR_ANGLE (numeric, degrees): the angle between the neighboring sensors
+        ROTATION_ANGLE (numeric, degrees): angle the particle rotates at
+        SENSOR_OFFSET: (numeric) distance from agent to sensor
+        TRAIL_DEPTH (numeric): trail length the agent leaves
 
         coords (np.ndarray of three `float`s): agent's coordinates
         left_sensor (np.ndarray of three `float`s): the left sensor's coordinates
@@ -154,7 +166,7 @@ class Particle():
         Initializing the particle(agent)
         Parameters:
             coords (np.ndarray of three `float`s): coordinates of agent
-            angle (int, degrees): direction angle of the agent
+            angle (numeric, degrees): direction angle of the agent
             face (np.ndarray of 'float's): vertices defining current agent's face
             polyhedron (Polyhedron): the polyhedron we are running on
             random_rotate_probability (int, default 15): the 1/probability of random
@@ -205,7 +217,7 @@ class Particle():
         Parameters:
             normal (np.ndarray of three `float`s): perpendicular to the diven face of the agent's face
             radius (np.ndarray of three `float`s): vector from agent's coordinates to point
-            angle (int or float, degrees): angle the particle rotates
+            angle (numeric, degrees): angle the particle rotates
         Returns:
             np.ndarray of three `float`s: new point's coordinates
         """
@@ -238,7 +250,8 @@ class Particle():
             sensors_map_dots (tuple of three MapDot): map dots of sensors
             iteration (int): current simulation iteration number
         Returns:
-            np.ndarray of three `int`s: the answer
+            np.ndarray of three `int`s: the combination of food and trail
+                under sensors
         """
         trail_under_sensor = np.zeros(3)
         sensors_values = np.zeros(3)
@@ -251,9 +264,11 @@ class Particle():
 
     def rotate(self, sensors_values):
         """
-        Rotates the particle and its sensors at the rotation angle
+        Rotates the particle and its sensors by the rotation angle, using
+            `sensors_values` to choose the direction
         Parameters:
-            sensors_values (np.ndarray of three `int`s): food and trail sum of each sensors
+            sensors_values (np.ndarray of three `int`s): the combination of food
+                and trail for each of the sensors
         """
         assert(type(sensors_values) == np.ndarray) # To be removed
         # turn right by default:
@@ -286,17 +301,7 @@ class Particle():
             np.ndarray of three `int`s: the answer
         """
         return (self.central_sensor - self.coords) / self.SENSOR_OFFSET
-        
-    def _is_edge_belong_face(self, edge, face):
-        """
-        Returns whether the edge belongs to face
-        Parameters:
-            edge (np.ndarray of two `int`s):
-            face (np.ndarray of 'float's): vertices defining current agent's face
-        Returns:
-            bool: True if the edge belongs to face, False otherwise
-        """
-        return (face==edge[0]).any() and (face==edge[1]).any()
+
 
     def _change_face(self, edge, polyhedron):
         """
@@ -307,7 +312,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         for face in polyhedron.faces:
-            if (face != self.face).any() and self._is_edge_belong_face(edge, face):
+            if (face != self.face).any() and edge_belongs_to_face(edge, face):
                 self.face = face
                 break
 
@@ -317,10 +322,10 @@ class Particle():
         Count moving vector's direction relative to face after crossing the edge
                                                     (it's self.face after changing)
         Parameters:
-            vector_move (np.ndarray of three `int`s): vector the agent moves
+            vector_move (np.ndarray of three `int`s): vector, along which the agent moves
             polyhedron (Polyhedron): the polyhedron we are running on
         Returns:
-            np.ndarray of three `int`s: the answer
+            np.ndarray of three `int`s: the move vector
         """
         normal_start = np.cross(self.left_sensor - self.coords, \
                                 self.right_sensor - self.coords)
@@ -343,7 +348,7 @@ class Particle():
                         np.cos(alpha)/phi_sin
         return faced_vector
 
-    def _move_throught_edge(self, vector_move, edge, intersect, polyhedron):
+    def _move_through_edge(self, vector_move, edge, intersect, polyhedron):
         """
         Change agent's coordinates to another face
         Parameters:
@@ -387,7 +392,7 @@ class Particle():
         vector_move = self._get_vector_move()
 
         for edge in polyhedron.edges:
-            if not self._is_edge_belong_face(edge, self.face):
+            if not edge_belongs_to_face(edge, self.face):
                 continue
             # check whether agent will cross the edge line or not
             line1 = np.asarray([polyhedron.vertices[edge[0]], \
@@ -399,7 +404,7 @@ class Particle():
                         is_in_segment(intersect, line2) and \
                         get_distance(intersect, self.coords) > EPSILON:
                     
-                    self._move_throught_edge(vector_move, edge, intersect, polyhedron)
+                    self._move_through_edge(vector_move, edge, intersect, polyhedron)
                     return
 
         self._move_step_size(vector_move)
