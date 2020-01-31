@@ -93,17 +93,17 @@ def is_in_segment(point, segment):
         return False
 
 
-    def edge_belongs_to_face(edge, face):
-        """
-        Returns whether the edge belongs to face
-        Parameters:
-            edge (np.ndarray of two `int`s):
-            face (np.ndarray of 'int's): vertices defining current agent's face
-        Returns:
-            bool: True if the edge belongs to face, False otherwise
-        """
-        return  len(np.argwhere(face==edge[0])) > 0 \
-                and len(np.argwhere(face==edge[1])) > 0
+def edge_belongs_to_face(edge, face):
+    """
+    Returns whether the edge belongs to face
+    Parameters:
+        edge (np.ndarray of two `int`s):
+        face (np.ndarray of 'int's): vertices defining current agent's face
+    Returns:
+        bool: True if the edge belongs to face, False otherwise
+    """
+    return  len(np.argwhere(face==edge[0])) > 0 \
+            and len(np.argwhere(face==edge[1])) > 0
 
 
 class TrailDot():
