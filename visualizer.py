@@ -6,14 +6,14 @@ import numpy as np
 
 class Frame():
     def __init__(self, particles):
-        self.x = np.asarray([])
-        self.y = np.asarray([])
-        self.z = np.asarray([])
-        for particle in particles:
-            a_x, a_y, a_z = particle.coords
-            self.x = np.append(self.x, a_x)
-            self.y = np.append(self.y, a_y)
-            self.z = np.append(self.z, a_z)
+        self.x = np.ndarray(0)
+        self.y = np.ndarray(0)
+        self.z = np.ndarray(0)
+
+        if len(particles):
+            coords = list(map(lambda p: p.coords, particles))
+            coords = np.asarray(coords)
+            self.x, self.y, self.z = coords.swapaxes(0, 1)
 
 
 class Visualizer():
@@ -34,9 +34,9 @@ class Visualizer():
             y=vy,
             z=vz,
             colorbar_title='z',
-            colorscale=[[0, 'grey'],
-                        [0.5, 'mediumturquoise'],
-                        [1, 'magenta']],
+            colorscale=((0, 'grey'),
+                        (0.5, 'mediumturquoise'),
+                        (1, 'magenta')),
             intensity=np.random.rand(len(polyhedron.vertices)),
             i=i,
             j=j,
@@ -50,23 +50,23 @@ class Visualizer():
 
     def create(self, i):
         frame = self.frames[i]
-        return [self.poly, go.Scatter3d(
+        return (self.poly, go.Scatter3d(
                 x=frame.x,
                 y=frame.y,
                 z=frame.z,
                 mode='markers',
-                marker=dict(size=self.size, color='yellow'))]
+                marker=dict(size=self.size, color='yellow')))
 
     def redraw(self):
         fig = go.Figure(data=self.create(0),
             layout=go.Layout(
-                xaxis=dict(range=[0, 5], autorange=False),
-                yaxis=dict(range=[0, 5], autorange=False),
+                xaxis=dict(range=(0, 5), autorange=False),
+                yaxis=dict(range=(0, 5), autorange=False),
             title="Physarum Polycephalum",
             updatemenus=[dict(
                 type="buttons",
                 buttons=[dict(label="grow",
                             method="animate",
-                            args=[None])])]),
+                            args=(None,))])]),
                 frames=[go.Frame(data=self.create(i)) for i in range(len(self.frames))])
         fig.show()

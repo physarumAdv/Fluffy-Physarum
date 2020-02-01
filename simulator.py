@@ -86,8 +86,7 @@ class Simulator:
         Returns:
             MapDot: the information about the dot
         """
-        coords = np.round(np.asarray(coords)).astype(int).tolist()
-        coords = tuple(coords)
+        coords = tuple(round(i) for i in coords)
         if coords not in self.simulation_map.keys():
             self.simulation_map[coords] = MapDot()
         return self.simulation_map[coords]

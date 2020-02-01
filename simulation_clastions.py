@@ -5,6 +5,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 
+_zeros = np.zeros(3)
+
+
 class Polyhedron():
     """
     A polyhedron for simulation
@@ -26,8 +29,8 @@ class Polyhedron():
         IMPORTANT NOTE: list the vertices clockwise watching
             outside the polyhedron for each face
         """
-        self.vertices = np.asarray(vertices).astype(float)
-        self.faces = np.asarray(faces)
+        self.vertices = vertices.astype(float)
+        self.faces = faces
         self.edges = set()
         for face in self.faces:
             for i in range(len(face) - 1):
@@ -60,19 +63,21 @@ def line_intersection(line1, line2):
     pointA = line1[0]
     pointB = line2[0]
     direction_vectorC = (line1[1] - line1[0]) / \
-            get_distance(line1[1] - line1[0], np.zeros(3))
+            get_distance(line1[1] - line1[0], _zeros)
     direction_vectorD = (line2[1] - line2[0]) / \
-            get_distance(line2[1] - line2[0], np.zeros(3))
+            get_distance(line2[1] - line2[0], _zeros)
     vectorE = pointB - pointA
     h = np.cross(direction_vectorD, vectorE)
     k = np.cross(direction_vectorD, direction_vectorC)
-    if (get_distance(h, np.zeros(3)) == 0 or get_distance(k, np.zeros(3)) == 0):
+
+    h_zeros_dist = get_distance(h, _zeros)
+    k_zeros_dist = get_distance(k, _zeros)
+
+    if (h_zeros_dist == 0 or k_zeros_dist == 0):
         return None
     else:
-        l = direction_vectorC * \
-            get_distance(h, np.zeros(3)) / \
-            get_distance(k, np.zeros(3))
-        if (np.dot(h, k) / get_distance(h, np.zeros(3)) / get_distance(k, np.zeros(3)) < 90):
+        l = direction_vectorC * h_zeros_dist / k_zeros_dist
+        if (np.dot(h, k) / h_zeros_dist / k_zeros_dist < 90):
             return pointA + l
         else:
             return pointA - l
@@ -86,11 +91,8 @@ def is_in_segment(point, segment):
     Returns:
         bool: True if point belongs to segment, False otherwise
     """
-    if get_distance(point, segment[1]) + get_distance(point, segment[0]) - \
-            get_distance(segment[0], segment[1]) <= EPSILON:
-        return True
-    else:
-        return False
+    return (get_distance(point, segment[1]) + get_distance(point, segment[0]) - \
+            get_distance(segment[0], segment[1]) <= EPSILON)
 
 
 def edge_belongs_to_face(edge, face):
@@ -102,8 +104,7 @@ def edge_belongs_to_face(edge, face):
     Returns:
         bool: True if the edge belongs to face, False otherwise
     """
-    return  len(np.argwhere(face==edge[0])) > 0 \
-            and len(np.argwhere(face==edge[1])) > 0
+    return (face==edge[0]).any() and (face==edge[1]).any()
 
 
 class TrailDot():
@@ -178,18 +179,18 @@ class Particle():
                           polyhedron.vertices[self.face[0]], \
                           polyhedron.vertices[self.face[1]] - \
                           polyhedron.vertices[self.face[0]])
-        normal = normal / get_distance(normal, np.zeros(3))
+        normal = normal / get_distance(normal, _zeros)
         radius = polyhedron.vertices[self.face[0]] - self.coords
         radius = self.SENSOR_OFFSET * radius / \
-                 get_distance(radius, np.zeros(3))
+                 get_distance(radius, _zeros)
         self.central_sensor = self._rotate_point_angle(normal, radius, angle)
         
-        self.left_sensor = np.zeros(3).astype(float)
-        self.right_sensor = np.zeros(3).astype(float)
+        self.left_sensor = np.zeros(3)
+        self.right_sensor = np.zeros(3)
         self._init_sensors_from_center(polyhedron)
 
         if random_rotate_probability is None:
-            random_rotate_probability = 15
+            random_rotate_probability = 30
         self.random_rotate_probability = random_rotate_probability
 
     def __repr__(self):
@@ -216,9 +217,11 @@ class Particle():
         Returns:
             np.ndarray of three `float`s: new point's coordinates
         """
-        return (1 - np.cos(np.radians(angle)))*np.dot(normal, radius)*normal + \
-                      np.cos(np.radians(angle))*radius + \
-                      np.sin(np.radians(angle))*np.cross(normal, radius) + self.coords
+        angle = np.radians(angle)
+        angle_cos = np.cos(angle)
+        return (1 - angle_cos)*np.dot(normal, radius)*normal + \
+                      angle_cos*radius + \
+                      np.sin(angle)*np.cross(normal, radius) + self.coords
 
     def _init_sensors_from_center(self, polyhedron):
         """
@@ -263,37 +266,28 @@ class Particle():
             sensors_values (np.ndarray of three `int`s): the combination of food
                 and trail for each of the sensors
         """
-        sensors_values = np.asarray(sensors_values)
-        heading = None
+        # turn right by default:
+        heading = self.ROTATION_ANGLE
         if random.randint(1, self.random_rotate_probability) == 1:
-            # turn randomly
+            # turn randomly:
             heading = random.randint(-1, 1) * self.ROTATION_ANGLE
         else:
             if sensors_values[1] >= sensors_values[0] and sensors_values[1] >= sensors_values[2]:
                 heading = 0
             elif sensors_values[1] < sensors_values[0] and sensors_values[1] < sensors_values[2] \
                  and sensors_values[0] == sensors_values[2]:
-                # turn randomly
-                r = random.randint(0, 1)
-                if r == 0:
+                # turn randomly:
+                if random.randint(0, 1):
                     heading = -self.ROTATION_ANGLE
-                else:
-                    heading = self.ROTATION_ANGLE
             elif sensors_values[0] >= sensors_values[1] and sensors_values[0] >= sensors_values[2]:
-                # turn left
+                # turn left:
                 heading = -self.ROTATION_ANGLE
-            elif sensors_values[2] >= sensors_values[1] and sensors_values[2] >= sensors_values[0]:
-                # turn right
-                heading = self.ROTATION_ANGLE
 
         normal = np.cross(self.left_sensor - self.coords, self.right_sensor - self.coords)
-        normal = normal / get_distance(normal, np.zeros((1, 3)))
-        radius = self.left_sensor - self.coords
-        self.left_sensor = self._rotate_point_angle(normal, radius, heading)
-        radius = self.central_sensor - self.coords
-        self.central_sensor = self._rotate_point_angle(normal, radius, heading)
-        radius = self.right_sensor - self.coords
-        self.right_sensor = self._rotate_point_angle(normal, radius, heading)
+        normal = normal / get_distance(normal, _zeros)
+        self.left_sensor = self._rotate_point_angle(normal, (self.left_sensor - self.coords), heading)
+        self.central_sensor = self._rotate_point_angle(normal, (self.central_sensor - self.coords), heading)
+        self.right_sensor = self._rotate_point_angle(normal, (self.right_sensor - self.coords), heading)
 
     def _get_vector_move(self):
         """
@@ -302,6 +296,7 @@ class Particle():
             np.ndarray of three `int`s: the answer
         """
         return (self.central_sensor - self.coords) / self.SENSOR_OFFSET
+
 
     def _change_face(self, edge, polyhedron):
         """
@@ -316,6 +311,7 @@ class Particle():
                 self.face = face
                 break
 
+
     def _count_moving_vector_through_edge(self, vector_move, polyhedron):
         """
         Count moving vector's direction relative to face after crossing the edge
@@ -328,24 +324,23 @@ class Particle():
         """
         normal_start = np.cross(self.left_sensor - self.coords, \
                                 self.right_sensor - self.coords)
-        normal_start = normal_start / get_distance(normal_start, np.zeros(3))
+        normal_start = normal_start / get_distance(normal_start, _zeros)
         normal_finish = np.cross(polyhedron.vertices[self.face[1]] - \
                                  polyhedron.vertices[self.face[0]], \
                                  polyhedron.vertices[self.face[2]] - \
                                  polyhedron.vertices[self.face[0]])
-        normal_finish = normal_finish / get_distance(normal_finish, np.zeros(3))
-        vector_move = vector_move / get_distance(vector_move, np.zeros(3))
+        normal_finish = normal_finish / get_distance(normal_finish, _zeros)
+        vector_move = vector_move / get_distance(vector_move, _zeros)
 
         # calculating angle between faces
-        phi = np.pi - np.arccos(np.dot(normal_start, normal_finish) / \
-                    get_distance(normal_start, np.zeros(3)) / \
-                    get_distance(normal_finish, np.zeros(3)))
+        phi = np.pi - np.arccos(np.dot(normal_start, normal_finish))
+        phi_sin = np.sin(phi)
         # calculating moving vector angle
         alpha = np.arccos(np.dot(vector_move, np.cross(normal_start, normal_finish)))
         faced_vector = (normal_start + normal_finish * np.cos(phi)) * \
-                        np.sin(alpha)/np.sin(phi) + \
+                        np.sin(alpha)/phi_sin + \
                        (np.cross(normal_start, normal_finish)) * \
-                        np.cos(alpha)/np.sin(phi)
+                        np.cos(alpha)/phi_sin
         return faced_vector
 
     def _move_through_edge(self, vector_move, edge, intersect, polyhedron):
@@ -362,10 +357,10 @@ class Particle():
         faced_vector = self._count_moving_vector_through_edge(vector_move, polyhedron)
         faced_vector = faced_vector * \
                       (1 - get_distance(intersect, self.coords)) / \
-                       get_distance(faced_vector, np.zeros(3))
+                       get_distance(faced_vector, _zeros)
         self.coords = intersect + faced_vector
         self.central_sensor = self.coords + faced_vector * self.SENSOR_OFFSET / \
-                                        get_distance(faced_vector, np.zeros(3))
+                                        get_distance(faced_vector, _zeros)
         self._init_sensors_from_center(polyhedron)
 
     def _move_step_size(self, vector_move):
