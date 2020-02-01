@@ -23,7 +23,7 @@ class Visualizer():
         vx, vy, vz = np.rot90(polyhedron.vertices)[::-1]
         i, j, k = [], [], []
 
-        for face in polyhedron.faces:
+        for face in polyhedron.face_to_edges.keys():
             for a in range(1, len(face) - 1):
                 i.append(face[0])
                 j.append(face[a])

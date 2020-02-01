@@ -138,7 +138,8 @@ if __name__ == "__main__":
     with open(polyhedron_file_path, "r") as f:
         vertices, faces, initializing_face, start_point_coordinates = \
             (np.asarray(json.loads(line)) for line in f.readlines())
-    vertices *= cel
+    initializing_face = tuple(initializing_face)
+    vertices = vertices.astype(float) * cel
     start_point_coordinates *= cel
     polyhedron = Polyhedron(
         vertices=vertices,

@@ -13,30 +13,44 @@ class Polyhedron():
     A polyhedron for simulation
     Note: the polyhedron must be convex
     Attributes:
-        vertices (np.ndarray V by 3): the polyhedron
+        vertices (iterable V by 3): the polyhedron
             vertices' coordinates
-        edges (np.ndarray E by 2 of `int`s): pairs of numbers
-            of vertices, connected by edges (vertices are 0-indexed)
-        faces (two-dimentional np.ndarray of `int`s): the array
-            of faces, where each face is given as an array of
-            numbers of vertices on the face (vertices are 0-indexed).
+        edge_to_faces (dict {tuple(2 `int`s): tuple(4 `int`s)}):
+            dict with keys describing edges (tuples of two 0-indexed
+            vertices numbers), values describing faces (tuples of four
+            0-indexed vertices numbers)
+        faces_to_edges (dict {tuple(4 `int`s): tuple(2 `int`s)}):
+            `self.edge_to_faces` (see above) with keys and values
+            swapped
     """
     def __init__(self, vertices, faces):
         """
         Initializes a polyhedron
         Parameters:
-            vertices, faces: see the class docs
+            vertices (2-dimensional iterable V by 3 `float`s): an iterable
+                of verices' coordinates
+            faces (2-dimensional iterable of length F with `int`s):
+            an iterable of 0-indexed vertices numbers
         IMPORTANT NOTE: list the vertices clockwise watching
             outside the polyhedron for each face
         """
-        self.vertices = vertices.astype(float)
-        self.faces = faces
-        self.edges = set()
-        for face in self.faces:
+        self.vertices = vertices
+
+        faces = (tuple(i) for i in faces)
+        self.face_to_edges = {}
+        self.edge_to_faces = {}
+
+        for face in faces:
             for i in range(len(face) - 1):
-                vertices = sorted(face[i:i+2].tolist())
-                self.edges.add(tuple(vertices))
-        self.edges = np.asarray(list(self.edges))
+                edge = tuple(sorted(face[i:i+2]))
+
+                prev_value = list(self.face_to_edges.get(face, () ))
+                new_value = tuple(prev_value + [edge])
+                self.face_to_edges[face] = new_value
+
+                prev_value = list(self.edge_to_faces.get(edge, () ))
+                new_value = tuple(prev_value + [face])
+                self.edge_to_faces[edge] = new_value
 
 EPSILON = 10**(-7)
 
@@ -93,18 +107,6 @@ def is_in_segment(point, segment):
     """
     return (get_distance(point, segment[1]) + get_distance(point, segment[0]) - \
             get_distance(segment[0], segment[1]) <= EPSILON)
-
-
-def edge_belongs_to_face(edge, face):
-    """
-    Returns whether the edge belongs to face
-    Parameters:
-        edge (np.ndarray of two `int`s):
-        face (np.ndarray of 'int's): vertices defining current agent's face
-    Returns:
-        bool: True if the edge belongs to face, False otherwise
-    """
-    return (face==edge[0]).any() and (face==edge[1]).any()
 
 
 class TrailDot():
@@ -172,7 +174,7 @@ class Particle():
         """
         self.food = 255
         self.coords = np.asarray(coords).astype(float)
-        self.face = np.asarray(face)
+        self.face = face
 
         #init of central_sensor
         normal = np.cross(polyhedron.vertices[self.face[2]] - \
@@ -306,8 +308,8 @@ class Particle():
                 of vertices, connected by edges (0-indexing)
             polyhedron (Polyhedron): the polyhedron we are running on
         """
-        for face in polyhedron.faces:
-            if (face != self.face).any() and edge_belongs_to_face(edge, face):
+        for face in polyhedron.edge_to_faces[edge]:
+            if(face != self.face).any():
                 self.face = face
                 break
 
@@ -386,9 +388,7 @@ class Particle():
         map_dot.trail.set_moment = iteration
         vector_move = self._get_vector_move()
 
-        for edge in polyhedron.edges:
-            if not edge_belongs_to_face(edge, self.face):
-                continue
+        for edge in polyhedron.face_to_edges[self.face]:
             # check whether agent will cross the edge line or not
             line1 = np.asarray([polyhedron.vertices[edge[0]], \
                                 polyhedron.vertices[edge[1]]])
