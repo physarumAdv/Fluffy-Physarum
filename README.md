@@ -15,6 +15,7 @@ Green spots - food.
 ![Screenshot](readme_images/smallGrowth.gif)
 ---
 
+![Screenshot](readme_images/cube_transparent.png)
 
 ## Requirements
 ```
