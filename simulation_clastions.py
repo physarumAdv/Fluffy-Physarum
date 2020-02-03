@@ -355,10 +355,10 @@ class Particle():
         self._change_face(edge, polyhedron)
         # self.face and self.trans_matrix changed
         faced_vector = self._count_moving_vector_through_edge(vector_move, polyhedron)
-        faced_vector = faced_vector * \
-                      (1 - get_distance(intersect, self.coords)) / \
-                       get_distance(faced_vector, _zeros)
-        self.coords = intersect + faced_vector
+        #faced_vector = faced_vector * \
+        #              (1 - get_distance(intersect, self.coords)) / \
+        #               get_distance(faced_vector, _zeros)
+        self.coords = intersect #+ faced_vector
         self.central_sensor = self.coords + faced_vector * self.SENSOR_OFFSET / \
                                         get_distance(faced_vector, _zeros)
         self._init_sensors_from_center(polyhedron)
