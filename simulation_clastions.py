@@ -309,7 +309,7 @@ class Particle():
             polyhedron (Polyhedron): the polyhedron we are running on
         """
         for face in polyhedron.edge_to_faces[edge]:
-            if(face != self.face).any():
+            if face != self.face:
                 self.face = face
                 break
 
