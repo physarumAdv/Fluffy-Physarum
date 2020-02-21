@@ -24,5 +24,5 @@ Green spots - food.
 
 ## Executing
 ```
-  python3 main.py
+  python3 simulator.py
 ```
