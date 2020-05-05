@@ -14,7 +14,7 @@ def chunkify(l, n_of_chunks):
     Parameters:
         l (list): The list to be splited
         n_of_chunks (int): Number of chunks to ger
-    Yielda:
+    Yields:
         list: The chunks
     """
     chunk_length = len(l) // n_of_chunks
