@@ -41,7 +41,7 @@ class Visualizer():
             i=i,
             j=j,
             k=k,
-            opacity=0.4,
+            opacity=0.5,
             name='y',
             showscale=True)
 
@@ -67,6 +67,8 @@ class Visualizer():
                 type="buttons",
                 buttons=[dict(label="grow",
                             method="animate",
-                            args=(None,))])]),
+                            args=[None, {"frame": {"duration": 0}}]
+                            )])]),
                 frames=[go.Frame(data=self.create(i)) for i in range(len(self.frames))])
+        
         fig.show()
