@@ -41,7 +41,7 @@ class Visualizer():
             i=i,
             j=j,
             k=k,
-            opacity=0.4,
+            opacity=0.7,
             name='y',
             showscale=True)
 
@@ -60,6 +60,7 @@ class Visualizer():
     def redraw(self):
         fig = go.Figure(data=self.create(0),
             layout=go.Layout(
+                plot_bgcolor='rgba(0,0,0,0)',
                 xaxis=dict(range=(0, 5), autorange=False),
                 yaxis=dict(range=(0, 5), autorange=False),
             title="Physarum Polycephalum",
@@ -69,4 +70,20 @@ class Visualizer():
                             method="animate",
                             args=(None,))])]),
                 frames=[go.Frame(data=self.create(i)) for i in range(len(self.frames))])
+
+        fig.layout.plot_bgcolor = '#DCDCDC'
+        fig.layout.paper_bgcolor = '#fff'
+
+        fig.update_layout(
+            scene=dict(
+                xaxis=dict(showticklabels=False),
+                yaxis=dict(showticklabels=False),
+                zaxis=dict(showticklabels=False),
+            )
+        )
+
+        fig.update_scenes(xaxis_title_text="")
+        fig.update_scenes(yaxis_title_text="")
+        fig.update_scenes(zaxis_title_text="")
+
         fig.show()
