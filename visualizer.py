@@ -68,7 +68,8 @@ class Visualizer():
                 type="buttons",
                 buttons=[dict(label="grow",
                             method="animate",
-                            args=(None,))])]),
+                            args=[None, {"frame": {"duration": 0}}]
+                            )])]),
                 frames=[go.Frame(data=self.create(i)) for i in range(len(self.frames))])
 
         fig.layout.plot_bgcolor = '#DCDCDC'
@@ -85,5 +86,5 @@ class Visualizer():
         fig.update_scenes(xaxis_title_text="")
         fig.update_scenes(yaxis_title_text="")
         fig.update_scenes(zaxis_title_text="")
-
+        
         fig.show()
